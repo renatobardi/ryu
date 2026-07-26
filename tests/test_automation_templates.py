@@ -1,4 +1,4 @@
-"""Automation templates (#26): autopilots, skills e squads usam vocabulário semântico."""
+"""Automation templates (#26): autopilots, skills and squads use the semantic vocabulary."""
 from __future__ import annotations
 
 from pathlib import Path
