@@ -43,6 +43,7 @@ from ryu.realtime.hub import hub
 from ryu.services import daemon as svc
 from ryu.services.auth import create_pat, current_user, decode_jwt, resolve_token
 from ryu.services.daemon import DaemonError, daemon_hub
+from ryu.services.workspaces import require_access
 
 log = structlog.get_logger("ryu.api.daemon")
 
@@ -988,12 +989,7 @@ async def _member_runtime(db: AsyncSession, user: User, runtime_id: str) -> Agen
     rt = await db.get(AgentRuntime, runtime_id)
     if rt is None:
         raise HTTPException(404, "runtime não encontrado")
-    if not user.id.startswith("agent:"):
-        res = await db.execute(
-            select(Member).where(Member.workspace_id == rt.workspace_id, Member.user_id == user.id)
-        )
-        if res.scalars().first() is None:
-            raise HTTPException(403, "sem acesso a este workspace")
+    await require_access(db, rt.workspace_id, user)
     return rt
 
 

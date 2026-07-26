@@ -21,6 +21,7 @@ from ryu.models import ChannelInstallation, GithubInstallation, GithubPullReques
 from ryu.services import integrations as svc
 from ryu.services.auth import current_user
 from ryu.services.crypto import mask_secret
+from ryu.services.workspaces import require_access
 
 router = APIRouter()
 webhooks_router = APIRouter()
@@ -30,17 +31,19 @@ def _err(e: svc.IntegrationError) -> HTTPException:
     return HTTPException(status_code=e.status_code, detail=e.message)
 
 
-async def _member_of(db: AsyncSession, workspace_id: str, user: User) -> Workspace:
+async def _require_member(db: AsyncSession, workspace_id: str, user: User) -> Workspace:
+    """Workspace do id, 404 se não existe e 403 se o user não é membro."""
     ws = await db.get(Workspace, workspace_id)
     if ws is None:
         raise HTTPException(404, "workspace não encontrado")
+    await require_access(db, workspace_id, user)
     return ws
 
 
 # ── GitHub App ──────────────────────────────────────────────────────────
 @router.get("/github/connect")
 async def github_connect(workspace_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
-    await _member_of(db, workspace_id, user)
+    await _require_member(db, workspace_id, user)
     try:
         url = svc.github_install_url()
     except svc.IntegrationError as e:
@@ -50,7 +53,7 @@ async def github_connect(workspace_id: str, db: AsyncSession = Depends(get_db), 
 
 @router.get("/github/installations")
 async def github_installations(workspace_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
-    await _member_of(db, workspace_id, user)
+    await _require_member(db, workspace_id, user)
     rows = await svc.list_github_installations(db, workspace_id)
     return [
         {
@@ -65,7 +68,7 @@ async def github_installations(workspace_id: str, db: AsyncSession = Depends(get
 async def github_installation_delete(
     workspace_id: str, installation_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)
 ):
-    await _member_of(db, workspace_id, user)
+    await _require_member(db, workspace_id, user)
     try:
         await svc.remove_github_installation(db, workspace_id, installation_id)
     except svc.IntegrationError as e:
@@ -163,7 +166,7 @@ class VcsConnectionCreate(BaseModel):
 
 @router.post("/vcs/connections", status_code=201)
 async def vcs_create(payload: VcsConnectionCreate, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
-    await _member_of(db, payload.workspace_id, user)
+    await _require_member(db, payload.workspace_id, user)
     try:
         conn = await svc.create_vcs_connection(
             db, workspace_id=payload.workspace_id, provider=payload.provider, base_url=payload.base_url,
@@ -184,7 +187,7 @@ def _vcs_dict(c: VcsConnection) -> dict:
 
 @router.get("/vcs/connections")
 async def vcs_list(workspace_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
-    await _member_of(db, workspace_id, user)
+    await _require_member(db, workspace_id, user)
     rows = await svc.list_vcs_connections(db, workspace_id)
     return [_vcs_dict(r) for r in rows]
 
@@ -193,7 +196,7 @@ async def vcs_list(workspace_id: str, db: AsyncSession = Depends(get_db), user: 
 async def vcs_delete(
     workspace_id: str, connection_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)
 ):
-    await _member_of(db, workspace_id, user)
+    await _require_member(db, workspace_id, user)
     try:
         await svc.delete_vcs_connection(db, workspace_id, connection_id)
     except svc.IntegrationError as e:
@@ -262,7 +265,7 @@ def _channel_dict(c: ChannelInstallation) -> dict:
 
 @router.post("/channels/install", status_code=201)
 async def channel_install(payload: ChannelInstall, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
-    await _member_of(db, payload.workspace_id, user)
+    await _require_member(db, payload.workspace_id, user)
     try:
         row = await svc.install_channel(
             db, workspace_id=payload.workspace_id, channel_type=payload.channel_type,
@@ -278,7 +281,7 @@ async def channel_install(payload: ChannelInstall, db: AsyncSession = Depends(ge
 
 @router.get("/channels")
 async def channels_list(workspace_id: str, channel_type: str | None = None, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
-    await _member_of(db, workspace_id, user)
+    await _require_member(db, workspace_id, user)
     rows = await svc.list_channel_installations(db, workspace_id, channel_type)
     return [_channel_dict(r) for r in rows]
 

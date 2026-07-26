@@ -27,6 +27,7 @@ from ryu.models import (
     now,
 )
 from ryu.realtime.hub import hub
+from ryu.services.workspaces import get_member
 
 ACTIVE_TASK_STATUSES = ("queued", "dispatched", "running")
 
@@ -41,11 +42,8 @@ def is_archived(agent: Agent) -> bool:
 
 # ── Permissões ────────────────────────────────────────────────────────
 async def _member_role(db: AsyncSession, user_id: str, workspace_id: str) -> str | None:
-    res = await db.execute(
-        select(Member).where(Member.workspace_id == workspace_id, Member.user_id == user_id)
-    )
-    m = res.scalars().first()
-    return m.role if m else None
+    member = await get_member(db, workspace_id, user_id)
+    return member.role if member else None
 
 
 async def can_manage_agent(db: AsyncSession, user_id: str, agent: Agent) -> bool:

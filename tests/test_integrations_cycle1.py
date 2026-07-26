@@ -68,6 +68,36 @@ async def test_github_webhook_accepts_valid_signature(client, monkeypatch):
     assert r.json()["ignored"] == "ping"
 
 
+# ── Authz de workspace ───────────────────────────────────────────────
+async def test_integrations_reject_non_member(client):
+    _, ws = await _setup(client, "integr-owner@ryu.dev")
+    await login(client, "integr-outsider@ryu.dev")  # sem membership no ws acima
+
+    r = await client.get("/api/integrations/github/installations", params={"workspace_id": ws["id"]})
+    assert r.status_code == 403, r.text
+
+    r = await client.get("/api/integrations/vcs/connections", params={"workspace_id": ws["id"]})
+    assert r.status_code == 403, r.text
+
+    r = await client.get("/api/integrations/channels", params={"workspace_id": ws["id"]})
+    assert r.status_code == 403, r.text
+
+    r = await client.post(
+        "/api/integrations/vcs/connections",
+        json={
+            "workspace_id": ws["id"], "provider": "forgejo", "base_url": "https://git.example",
+            "repo": "acme/repo", "access_token": "t", "webhook_secret": "s",
+        },
+    )
+    assert r.status_code == 403, r.text
+
+
+async def test_integrations_allow_member(client):
+    _, ws = await _setup(client, "integr-member@ryu.dev")
+    r = await client.get("/api/integrations/vcs/connections", params={"workspace_id": ws["id"]})
+    assert r.status_code == 200, r.text
+
+
 # ── Espelhamento de PR + auto-link + merge→done ─────────────────────
 async def test_github_pr_mirror_autolink_and_merge_done(client, monkeypatch):
     from ryu.config import settings

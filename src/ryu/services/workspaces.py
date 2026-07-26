@@ -104,6 +104,17 @@ async def require_member(db: AsyncSession, workspace_id: str, user: User) -> Mem
     return member
 
 
+async def require_access(db: AsyncSession, workspace_id: str, user: User) -> str:
+    """Papel do user no workspace, 403 se não tiver acesso.
+
+    Agentes (tokens rat_/rdt_, user.id = 'agent:<id>') autenticam pelo próprio
+    token e passam como papel 'agent' — mesmo critério de current_workspace.
+    """
+    if user.id.startswith("agent:"):
+        return "agent"
+    return (await require_member(db, workspace_id, user)).role
+
+
 async def require_role(
     db: AsyncSession, workspace_id: str, user: User, roles: tuple[str, ...]
 ) -> Member:
