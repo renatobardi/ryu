@@ -34,6 +34,7 @@ import signal
 import socket
 import subprocess
 import sys
+import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -391,7 +392,10 @@ class Daemon:
         except ImportError:
             _log("lib `websockets` ausente — usando só poll HTTP")
             return
-        url = self.server_url.replace("http://", "ws://").replace("https://", "wss://")
+        # mesma origem do server, só trocando o esquema HTTP pelo WebSocket
+        parts = urllib.parse.urlsplit(self.server_url)
+        ws_scheme = "wss" if parts.scheme == "https" else "ws"
+        url = urllib.parse.urlunsplit(parts._replace(scheme=ws_scheme))
         token = self.user_token
         while not self._stop.is_set():
             try:
