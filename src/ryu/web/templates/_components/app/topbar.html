@@ -1,0 +1,23 @@
+{#
+  Tradução de docs/Ryu Design System/components/app/TopBar.jsx.
+
+  Barra superior do workspace: indicador de conexão realtime e link pro
+  Inbox com contagem. Children podem ser inseridos antes dos elementos
+  padrão via {% call topbar(...) %}.
+#}
+{% from "_components/data/count_badge.html" import count_badge %}
+
+{% macro topbar(connection='connected', inbox_count=0, workspace_slug='', attrs={}) %}
+<header class="h-11 shrink-0 flex items-center justify-end gap-4 px-5 border-b border-border-soft bg-surface-chrome"
+        {% for k, v in attrs.items() %}{{ k }}="{{ v }}" {% endfor %}>
+  {{ caller() if caller is defined }}
+  <span id="ws-status" title="conexão realtime"
+        class="text-2xs {{ 'text-emerald-500' if connection == 'connected' else 'text-red-500' if connection == 'disconnected' else 'text-text-faint' }}">●</span>
+  <a href="/w/{{ workspace_slug }}/inbox" class="relative text-sm text-text-muted hover:text-text-body">
+    Inbox
+    <span class="absolute -top-2 -right-4">
+      {{ count_badge(count=inbox_count, hide_zero=True, attrs={'id': 'topbar-inbox-count'}) }}
+    </span>
+  </a>
+</header>
+{% endmacro %}

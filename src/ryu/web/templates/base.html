@@ -6,6 +6,7 @@
   <title>{% block title %}Ryu{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="/static/app.css">
   <script>
     tailwind.config = {
@@ -90,94 +91,64 @@
         },
       },
     };
+
+    htmx.onLoad(function (content) {
+      if (window.lucide) lucide.createIcons({ root: content });
+    });
   </script>
 </head>
-<body class="bg-[#0b0b0f] text-zinc-200 antialiased h-screen overflow-hidden">
+<body class="bg-surface-app text-text-body antialiased h-screen overflow-hidden">
 <div class="flex h-full">
+
+  {% from "_components/app/sidebar.html" import sidebar %}
+  {% from "_components/app/sidebar_section.html" import sidebar_section %}
+  {% from "_components/app/nav_item.html" import nav_item %}
+  {% from "_components/app/topbar.html" import topbar %}
 
   {% if workspace is defined and workspace %}
   <!-- ── Sidebar ─────────────────────────────────────────────── -->
-  <aside class="w-56 shrink-0 flex flex-col border-r border-zinc-800/70 bg-[#0e0e13]">
-    <div class="px-4 py-4 flex items-center gap-2 border-b border-zinc-800/70">
-      <div class="w-6 h-6 rounded-md bg-violet-600 flex items-center justify-center text-white text-xs font-bold">R</div>
-      <div class="min-w-0">
-        <div class="text-sm font-semibold text-zinc-100 truncate">{{ workspace.name }}</div>
-        <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Ryu</div>
-      </div>
-    </div>
+  {% call sidebar(
+       user=user|default(none),
+       search_attrs={
+         'hx-get': '/w/' ~ workspace.slug ~ '/search',
+         'hx-trigger': 'keyup changed delay:400ms',
+         'hx-target': '#search-results',
+         'hx-push-url': 'true',
+       },
+       new_issue_attrs={
+         'onclick': "window.location.href='/w/" ~ workspace.slug ~ "/board#new-issue'",
+       },
+       profile_attrs={
+         'onclick': "window.location.href='/w/" ~ workspace.slug ~ "/settings'",
+       }
+  ) %}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/inbox', icon_name='inbox', label='Inbox', active=active_nav is defined and active_nav == 'inbox', count=0, count_attrs={'id': 'sidebar-inbox-count'}) }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/chat', icon_name='message-circle', label='Chat', active=active_nav is defined and active_nav == 'chat') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/my-issues', icon_name='user', label='My Issues', active=active_nav is defined and active_nav == 'my_issues') }}
 
-    <div class="px-2 pt-3 space-y-2">
-      <form action="/w/{{ workspace.slug }}/search" method="get">
-        <input id="sidebar-search" name="q" placeholder="Search  ⌘K"
-               hx-get="/w/{{ workspace.slug }}/search" hx-trigger="keyup changed delay:400ms" hx-target="#search-results" hx-push-url="true"
-               class="w-full bg-zinc-900 border border-zinc-800 rounded-md px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-violet-600">
-      </form>
-      <a href="/w/{{ workspace.slug }}/board#new-issue"
-         class="flex items-center justify-center gap-1.5 w-full bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium rounded-md py-1.5">
-        <span>＋</span><span>New Issue</span>
-      </a>
-    </div>
+    <!-- Pinned items (issues/projects fixados pelo usuário) -->
+    <div hx-get="/w/{{ workspace.slug }}/pins" hx-trigger="load" hx-swap="innerHTML"></div>
 
-    <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-0.5 text-sm">
-      {% macro nav_item(key, label, href, icon) %}
-      <a href="{{ href }}"
-         class="flex items-center gap-2.5 px-3 py-1.5 rounded-md
-                {% if active_nav is defined and active_nav == key %}bg-zinc-800/80 text-zinc-100{% else %}text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200{% endif %}">
-        <span class="w-4 text-center text-xs opacity-80">{{ icon }}</span>
-        <span class="flex-1">{{ label }}</span>
-        {% if key == 'inbox' %}
-        <span id="sidebar-inbox-count"
-              class="hidden text-[10px] font-semibold bg-violet-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center"></span>
-        {% endif %}
-      </a>
-      {% endmacro %}
+    {% call sidebar_section() %}Workspace{% endcall %}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/board', icon_name='layout-grid', label='Issues', active=active_nav is defined and active_nav == 'board') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/projects', icon_name='folder', label='Projects', active=active_nav is defined and active_nav == 'projects') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/autopilots', icon_name='zap', label='Autopilots', active=active_nav is defined and active_nav == 'autopilots') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/agents', icon_name='bot', label='Agents', active=active_nav is defined and active_nav == 'agents') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/squads', icon_name='users', label='Squads', active=active_nav is defined and active_nav == 'squads') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/usage', icon_name='bar-chart-2', label='Usage', active=active_nav is defined and active_nav == 'usage') }}
 
-      {{ nav_item('inbox',     'Inbox',     '/w/' ~ workspace.slug ~ '/inbox',     '📥') }}
-      {{ nav_item('chat',      'Chat',      '/w/' ~ workspace.slug ~ '/chat',      '💬') }}
-      {{ nav_item('my_issues', 'My Issues', '/w/' ~ workspace.slug ~ '/my-issues', '👤') }}
-
-      <!-- Pinned items (issues/projects fixados pelo usuário) -->
-      <div hx-get="/w/{{ workspace.slug }}/pins" hx-trigger="load" hx-swap="innerHTML"></div>
-
-      <div class="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wider text-zinc-600">Workspace</div>
-      {{ nav_item('board',      'Issues',     '/w/' ~ workspace.slug ~ '/board',      '▦') }}
-      {{ nav_item('projects',   'Projects',   '/w/' ~ workspace.slug ~ '/projects',   '📁') }}
-      {{ nav_item('autopilots', 'Autopilots', '/w/' ~ workspace.slug ~ '/autopilots', '⚡') }}
-      {{ nav_item('agents',     'Agents',     '/w/' ~ workspace.slug ~ '/agents',     '🤖') }}
-      {{ nav_item('squads',     'Squads',     '/w/' ~ workspace.slug ~ '/squads',     '👥') }}
-      {{ nav_item('usage',      'Usage',      '/w/' ~ workspace.slug ~ '/usage',      '📊') }}
-
-      <div class="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wider text-zinc-600">Configure</div>
-      {{ nav_item('members',  'Members',  '/w/' ~ workspace.slug ~ '/members',  '🧑‍🤝‍🧑') }}
-      {{ nav_item('runtimes', 'Runtimes', '/w/' ~ workspace.slug ~ '/runtimes', '🧩') }}
-      {{ nav_item('skills',   'Skills',   '/w/' ~ workspace.slug ~ '/skills',   '📚') }}
-      {{ nav_item('settings', 'Settings', '/w/' ~ workspace.slug ~ '/settings', '⚙️') }}
-    </nav>
-
-    <div class="px-4 py-3 border-t border-zinc-800/70 flex items-center justify-between gap-2">
-      {% if user is defined and user %}
-      <div class="min-w-0">
-        <div class="text-xs text-zinc-300 truncate">{{ user.name or user.email }}</div>
-        <div class="text-[10px] text-zinc-500 truncate">{{ user.email }}</div>
-      </div>
-      <button onclick="ryuLogout()" title="Sair"
-              class="text-zinc-500 hover:text-zinc-200 text-xs shrink-0">Sair</button>
-      {% endif %}
-    </div>
-  </aside>
+    {% call sidebar_section() %}Configure{% endcall %}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/members', icon_name='users', label='Members', active=active_nav is defined and active_nav == 'members') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/runtimes', icon_name='puzzle', label='Runtimes', active=active_nav is defined and active_nav == 'runtimes') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/skills', icon_name='book-open', label='Skills', active=active_nav is defined and active_nav == 'skills') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/settings', icon_name='settings', label='Settings', active=active_nav is defined and active_nav == 'settings') }}
+  {% endcall %}
   {% endif %}
 
   <!-- ── Conteúdo ────────────────────────────────────────────── -->
   <div class="flex-1 flex flex-col min-w-0">
     {% if workspace is defined and workspace %}
-    <header class="h-11 shrink-0 flex items-center justify-end gap-4 px-5 border-b border-zinc-800/70 bg-[#0e0e13]">
-      <span id="ws-status" class="text-[10px] text-zinc-600" title="conexão realtime">●</span>
-      <a href="/w/{{ workspace.slug }}/inbox" class="relative text-zinc-400 hover:text-zinc-200 text-sm">
-        Inbox
-        <span id="topbar-inbox-count"
-              class="hidden absolute -top-2 -right-4 text-[10px] font-semibold bg-violet-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center"></span>
-      </a>
-    </header>
+    {{ topbar(workspace_slug=workspace.slug) }}
     {% endif %}
     <main class="flex-1 overflow-y-auto">
       {% block content %}{% endblock %}
@@ -257,7 +228,7 @@ async function ryuLogout() {
 
     ws.onopen = () => {
       retryMs = 1000;
-      if (dot) { dot.classList.remove('text-zinc-600', 'text-red-500'); dot.classList.add('text-emerald-500'); }
+      if (dot) { dot.classList.remove('text-text-faint', 'text-red-500'); dot.classList.add('text-emerald-500'); }
     };
 
     ws.onmessage = (msg) => {

@@ -1,0 +1,20 @@
+{#
+  Tradução de docs/Ryu Design System/components/app/NavItem.jsx.
+
+  Item de navegação da sidebar. Recebe o nome do ícone Lucide, rótulo,
+  estado ativo e contagem opcional. O ícone sempre usa currentColor.
+#}
+{% from "_components/data/count_badge.html" import count_badge %}
+
+{% macro nav_item(href='#', icon_name='', label='', active=False, count=0, count_attrs={}, attrs={}) %}
+<a href="{{ href }}"
+   class="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors duration-120
+          {{ 'bg-surface-active text-text-primary' if active else 'text-text-muted hover:bg-surface-hover hover:text-text-body' }}"
+   {% for k, v in attrs.items() %}{{ k }}="{{ v }}" {% endfor %}>
+  <span class="w-4 h-4 flex items-center justify-center opacity-[0.85] shrink-0">
+    <i data-lucide="{{ icon_name }}" class="w-4 h-4" stroke-width="1.75"></i>
+  </span>
+  <span class="flex-1 truncate">{{ label }}</span>
+  {{ count_badge(count=count, hide_zero=True, attrs=count_attrs) }}
+</a>
+{% endmacro %}
