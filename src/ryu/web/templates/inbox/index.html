@@ -26,7 +26,7 @@
         </select>
       </form>
       <form hx-post="/w/{{ workspace.slug }}/inbox/mark-all-read" hx-target="#inbox-items" hx-swap="outerHTML">
-        {% call button(variant='secondary', size='md', attrs={'type': 'submit'}) %}Marcar todas como lidas{% endcall %}
+        {% call button(variant='secondary', type='submit') %}Marcar todas como lidas{% endcall %}
       </form>
     </div>
   </div>
