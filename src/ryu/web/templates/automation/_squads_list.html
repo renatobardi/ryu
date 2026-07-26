@@ -2,9 +2,10 @@
   {% for s in squads %}
   <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
     <div class="flex items-start justify-between">
-      <div>
+      <div class="flex-1 min-w-0">
         <div class="text-zinc-100 font-medium">{{ s.name }}</div>
         <div class="text-xs text-zinc-500 mt-0.5">líder: {{ agent_names.get(s.leader_agent_id, s.leader_agent_id) }}</div>
+        {% if s.description %}<div class="text-xs text-zinc-400 mt-1">{{ s.description }}</div>{% endif %}
       </div>
       <form hx-post="/w/{{ workspace.slug }}/squads/{{ s.id }}/delete" hx-target="#squads-list" hx-swap="outerHTML">
         <button class="text-zinc-500 hover:text-red-400 text-xs">excluir</button>
@@ -13,8 +14,11 @@
 
     <div class="mt-2 flex flex-wrap items-center gap-2">
       {% for m in squad_members.get(s.id, []) %}
-      <span class="bg-zinc-800 text-zinc-300 text-xs rounded-full px-2 py-0.5">
+      <span class="bg-zinc-800 text-zinc-300 text-xs rounded-full px-2 py-0.5"
+            title="{{ m.role or ('líder' if m.member_id == s.leader_agent_id else 'worker') }}">
         {% if m.member_type == 'agent' %}{{ agent_names.get(m.member_id, m.member_id) }}{% else %}humano:{{ m.member_id[:8] }}{% endif %}
+        {% if m.member_id == s.leader_agent_id %}<span class="text-amber-400">&#9733;</span>
+        {% elif m.role %}<span class="text-zinc-500">· {{ m.role }}</span>{% endif %}
       </span>
       {% endfor %}
       {% if agents %}
@@ -23,10 +27,24 @@
         <select name="agent_id" class="bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300 px-2 py-1">
           {% for a in agents %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
         </select>
+        <input name="role" placeholder="papel"
+               class="w-20 bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300 px-2 py-1" />
         <button class="text-violet-400 hover:text-violet-300 text-xs">+ agente</button>
       </form>
       {% endif %}
     </div>
+
+    <details class="mt-2">
+      <summary class="text-xs text-zinc-500 cursor-pointer hover:text-zinc-300">briefing (descrição + instruções)</summary>
+      <form hx-post="/w/{{ workspace.slug }}/squads/{{ s.id }}/update" hx-target="#squads-list" hx-swap="outerHTML"
+            class="mt-2 space-y-2">
+        <input name="description" value="{{ s.description }}" placeholder="Descrição da squad"
+               class="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-200" />
+        <textarea name="instructions" rows="3" placeholder="Instruções operacionais (injetadas em todo briefing do líder)"
+                  class="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-200">{{ s.instructions }}</textarea>
+        <button class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1 rounded">Salvar briefing</button>
+      </form>
+    </details>
 
     {% if issues %}
     <form hx-post="/w/{{ workspace.slug }}/squads/{{ s.id }}/assign" hx-target="#squads-list" hx-swap="outerHTML"

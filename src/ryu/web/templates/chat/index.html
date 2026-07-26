@@ -20,10 +20,45 @@
           Novo
         </button>
       </form>
+      {% if agents %}
+      <form method="post" action="/w/{{ workspace.slug }}/chat/pin-agent" class="mt-2 flex gap-2 items-center">
+        <select name="agent_id" required
+                class="flex-1 bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1 text-xs text-neutral-400">
+          {% for agent in agents %}
+          <option value="{{ agent.id }}">{{ agent.name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" title="Fixar agente na barra rápida"
+                class="px-2 py-1 rounded text-xs text-neutral-500 hover:text-amber-400 border border-neutral-800">
+          &#9733; fixar
+        </button>
+      </form>
+      {% endif %}
       {% if not agents %}
       <p class="mt-2 text-xs text-neutral-500">Nenhum agente no workspace ainda.</p>
       {% endif %}
     </div>
+
+    {% if pinned_agents %}
+    <!-- Barra de quick-agents (pinned) — conversa nova com um clique -->
+    <div class="px-3 py-2 border-b border-neutral-800 flex flex-wrap gap-1.5" id="pinned-agents-bar">
+      {% for pa in pinned_agents %}
+      <span class="inline-flex items-center rounded-full bg-neutral-900 border border-neutral-700 overflow-hidden">
+        <form method="post" action="/w/{{ workspace.slug }}/chat/new" class="inline">
+          <input type="hidden" name="agent_id" value="{{ pa.id }}" />
+          <button type="submit" title="Nova conversa com {{ pa.name }}"
+                  class="px-2 py-0.5 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800">
+            @{{ pa.handle }}
+          </button>
+        </form>
+        <form method="post" action="/w/{{ workspace.slug }}/chat/unpin-agent/{{ pa.id }}" class="inline">
+          <button type="submit" title="Desafixar"
+                  class="px-1.5 py-0.5 text-xs text-neutral-600 hover:text-red-400">&times;</button>
+        </form>
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
 
     <nav class="flex-1 overflow-y-auto py-2">
       {% for s in sessions %}
@@ -31,7 +66,10 @@
          class="group flex items-center gap-2 px-3 py-2 mx-1 rounded-md text-sm
                 {% if active_session and active_session.id == s.id %}bg-neutral-800 text-white{% else %}text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200{% endif %}">
         {% if s.pinned %}<span title="Fixada" class="text-amber-400 text-xs">&#9733;</span>{% endif %}
-        <span class="truncate">{{ s.title }}</span>
+        <span class="truncate {{ 'font-semibold text-neutral-100' if s.unread_since else '' }}">{{ s.title }}</span>
+        {% if s.unread_since %}
+        <span title="Não lida" class="ml-auto shrink-0 w-2 h-2 rounded-full bg-violet-500"></span>
+        {% endif %}
       </a>
       {% else %}
       <p class="px-4 py-6 text-sm text-neutral-600">Nenhuma conversa. Crie uma acima.</p>
@@ -77,18 +115,53 @@
     </div>
 
     <footer class="p-3 border-t border-neutral-800">
-      <form hx-post="/w/{{ workspace.slug }}/chat/{{ active_session.id }}/send"
-            hx-target="#chat-messages" hx-swap="innerHTML"
-            hx-on::after-request="this.reset()"
-            class="flex gap-2">
-        <input name="content" autocomplete="off" required
-               placeholder="Mensagem para o agente…"
-               class="flex-1 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-violet-500" />
-        <button type="submit"
-                class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-sm font-medium text-white">
-          Enviar
-        </button>
-      </form>
+      {% if active_session.archived %}
+      <div class="text-center text-sm text-neutral-500 py-2 bg-neutral-950 border border-neutral-800 rounded-lg">
+        Sessão arquivada — somente leitura. Desarquive para enviar mensagens.
+      </div>
+      {% else %}
+      <div class="flex gap-2">
+        <form hx-post="/w/{{ workspace.slug }}/chat/{{ active_session.id }}/send"
+              hx-target="#chat-messages" hx-swap="innerHTML"
+              hx-on::after-request="this.reset()"
+              class="flex-1 flex gap-2" id="chat-composer">
+          <input name="content" autocomplete="off" required id="chat-composer-input"
+                 placeholder="Mensagem para o agente…"
+                 class="flex-1 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-violet-500" />
+          <button type="submit"
+                  class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-sm font-medium text-white">
+            Enviar
+          </button>
+        </form>
+        <form hx-post="/w/{{ workspace.slug }}/chat/{{ active_session.id }}/cancel"
+              hx-target="#chat-messages" hx-swap="innerHTML"
+              hx-on::after-request="ryuRestoreDraft('{{ active_session.id }}')">
+          <button type="submit" title="Parar a resposta em andamento"
+                  {% if not pending_task %}disabled{% endif %}
+                  class="px-3 py-2 rounded-lg text-sm font-medium border
+                         {% if pending_task %}bg-red-950/50 border-red-800 text-red-300 hover:bg-red-900/50{% else %}bg-neutral-950 border-neutral-800 text-neutral-700 cursor-not-allowed{% endif %}">
+            &#9632; Parar
+          </button>
+        </form>
+      </div>
+      <script>
+        // draft restore: cancelamento sem resposta devolve o texto ao composer
+        async function ryuRestoreDraft(sessionId) {
+          try {
+            const r = await fetch(`/api/chat/${sessionId}/draft-restores`);
+            if (!r.ok) return;
+            const restores = await r.json();
+            if (!restores.length) return;
+            const last = restores[restores.length - 1];
+            const input = document.getElementById('chat-composer-input');
+            if (input && !input.value) input.value = last.content;
+            await fetch(`/api/chat/${sessionId}/draft-restores/${last.id}`, { method: 'DELETE' });
+          } catch (e) { /* best-effort */ }
+        }
+        // recupera drafts pendentes ao carregar a página (ex.: refresh pós-cancel)
+        ryuRestoreDraft('{{ active_session.id }}');
+      </script>
+      {% endif %}
     </footer>
     {% else %}
     <div class="flex-1 flex items-center justify-center">

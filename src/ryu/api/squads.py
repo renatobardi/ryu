@@ -36,16 +36,27 @@ class SquadCreate(BaseModel):
     workspace_id: str
     name: str
     leader_agent_id: str
+    description: str = ""
+    instructions: str = ""
 
 
 class SquadPatch(BaseModel):
     name: str | None = None
     leader_agent_id: str | None = None
+    description: str | None = None
+    instructions: str | None = None
 
 
 class MemberAdd(BaseModel):
     member_type: str  # agent|member
     member_id: str
+    role: str = ""
+
+
+class MemberRolePatch(BaseModel):
+    member_id: str
+    member_type: str = "agent"
+    role: str
 
 
 class AssignIssue(BaseModel):
@@ -56,7 +67,10 @@ class AssignIssue(BaseModel):
 @router.post("", status_code=201)
 async def create_squad(payload: SquadCreate, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
-        squad = await svc.create_squad(db, payload.workspace_id, payload.name, payload.leader_agent_id)
+        squad = await svc.create_squad(
+            db, payload.workspace_id, payload.name, payload.leader_agent_id,
+            description=payload.description, instructions=payload.instructions,
+        )
     except svc.AutomationError as e:
         raise _http(e)
     return svc.squad_to_dict(squad, await svc.list_squad_members(db, squad.id))
@@ -103,15 +117,37 @@ async def members(squad_id: str, db: AsyncSession = Depends(get_db), user: User 
     except svc.AutomationError as e:
         raise _http(e)
     return [
-        {"member_type": m.member_type, "member_id": m.member_id}
+        {"member_type": m.member_type, "member_id": m.member_id, "role": getattr(m, "role", "") or ""}
         for m in await svc.list_squad_members(db, squad_id)
     ]
+
+
+@router.get("/{squad_id}/members/status")
+async def members_status(squad_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
+    """Status derivado dos membros (working/idle/archived + issues ativas)."""
+    try:
+        return await svc.list_squad_member_status(db, squad_id)
+    except svc.AutomationError as e:
+        raise _http(e)
+
+
+@router.patch("/{squad_id}/members/role")
+async def patch_member_role(
+    squad_id: str, payload: MemberRolePatch, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)
+):
+    try:
+        row = await svc.set_squad_member_role(
+            db, squad_id, payload.member_type, payload.member_id, payload.role
+        )
+    except svc.AutomationError as e:
+        raise _http(e)
+    return {"member_type": row.member_type, "member_id": row.member_id, "role": row.role}
 
 
 @router.post("/{squad_id}/members", status_code=204)
 async def add_member(squad_id: str, payload: MemberAdd, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
-        await svc.add_squad_member(db, squad_id, payload.member_type, payload.member_id)
+        await svc.add_squad_member(db, squad_id, payload.member_type, payload.member_id, payload.role)
     except svc.AutomationError as e:
         raise _http(e)
 
@@ -182,12 +218,16 @@ async def squads_page_create(
     request: Request,
     name: str = Form(...),
     leader_agent_id: str = Form(...),
+    description: str = Form(""),
+    instructions: str = Form(""),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(current_user),
 ):
     ws = await _workspace_by_slug(db, slug)
     try:
-        await svc.create_squad(db, ws.id, name, leader_agent_id)
+        await svc.create_squad(
+            db, ws.id, name, leader_agent_id, description=description, instructions=instructions
+        )
     except svc.AutomationError as e:
         raise _http(e)
     ctx = await _squads_ctx(db, ws)
@@ -201,12 +241,13 @@ async def squads_page_add_member(
     squad_id: str,
     request: Request,
     agent_id: str = Form(...),
+    role: str = Form(""),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(current_user),
 ):
     ws = await _workspace_by_slug(db, slug)
     try:
-        await svc.add_squad_member(db, squad_id, "agent", agent_id)
+        await svc.add_squad_member(db, squad_id, "agent", agent_id, role)
     except svc.AutomationError as e:
         raise _http(e)
     ctx = await _squads_ctx(db, ws)
@@ -226,6 +267,26 @@ async def squads_page_assign(
     ws = await _workspace_by_slug(db, slug)
     try:
         await svc.assign_issue_to_squad(db, squad_id, issue_id, "member", user.id)
+    except svc.AutomationError as e:
+        raise _http(e)
+    ctx = await _squads_ctx(db, ws)
+    ctx["request"] = request
+    return templates.TemplateResponse("automation/_squads_list.html", ctx)
+
+
+@pages_router.post("/w/{slug}/squads/{squad_id}/update", response_class=HTMLResponse)
+async def squads_page_update(
+    slug: str,
+    squad_id: str,
+    request: Request,
+    description: str = Form(""),
+    instructions: str = Form(""),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    ws = await _workspace_by_slug(db, slug)
+    try:
+        await svc.update_squad(db, squad_id, {"description": description, "instructions": instructions})
     except svc.AutomationError as e:
         raise _http(e)
     ctx = await _squads_ctx(db, ws)

@@ -160,7 +160,27 @@ async def my_issues_page(slug: str, request: Request, db: AsyncSession = Depends
 @pages_router.get("/w/{slug}/runtimes", response_class=HTMLResponse)
 async def runtimes_page(slug: str, request: Request, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     ws = await current_workspace(slug, db, user)
-    runtimes = [{"name": cli, "path": shutil.which(cli), "available": shutil.which(cli) is not None} for cli in RUNTIME_CLIS]
+    # CLIs detectados no host do servidor (detecção ampla + overrides RYU_<X>_PATH)
+    from ryu.runner.adapters import detect_runtimes
+
+    runtimes = [
+        {"name": r["provider"], "path": r["path"], "available": r["available"]}
+        for r in detect_runtimes()
+    ]
+    for cli in ("git", "node"):
+        runtimes.append({"name": cli, "path": shutil.which(cli), "available": shutil.which(cli) is not None})
+    # runtimes externos registrados por daemons (online/offline por last_seen)
+    from ryu.services import daemon as daemon_svc
+
+    remote = [daemon_svc.runtime_to_dict(rt) for rt in await daemon_svc.list_runtimes(db, ws.id)]
+    for r in remote:
+        runtimes.append(
+            {
+                "name": f"{r['provider']} @ {r['device_name'] or r['daemon_id'] or 'daemon'}",
+                "path": r["version"] or "runtime externo (daemon)",
+                "available": r["status"] == "online",
+            }
+        )
     return templates.TemplateResponse(
         "workspace/runtimes.html",
         {"request": request, "user": user, "workspace": ws, "active_nav": "runtimes", "runtimes": runtimes},
@@ -187,6 +207,10 @@ async def settings_update(
     user: User = Depends(current_user),
 ):
     ws = await current_workspace(slug, db, user)
+    # enforcement de papel: update de workspace = owner/admin (multica)
+    from ryu.services.workspaces import require_role
+
+    await require_role(db, ws.id, user, ("owner", "admin"))
     if name.strip():
         ws.name = name.strip()
     prefix = issue_prefix.strip().upper()

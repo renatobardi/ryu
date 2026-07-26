@@ -1,0 +1,14 @@
+{% if pins %}
+<div class="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wider text-zinc-600">Pinned</div>
+{% for p in pins %}
+{% if p.item %}
+<a href="{% if p.item_type == 'issue' %}/w/{{ workspace.slug }}/issues/{{ p.item.key }}{% else %}/w/{{ workspace.slug }}/projects{% endif %}"
+   class="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200">
+  <span class="w-4 text-center text-xs opacity-80">📌</span>
+  <span class="flex-1 truncate text-sm">
+    {% if p.item_type == 'issue' %}{{ p.item.key }} · {{ p.item.title }}{% else %}{{ p.item.name }}{% endif %}
+  </span>
+</a>
+{% endif %}
+{% endfor %}
+{% endif %}
