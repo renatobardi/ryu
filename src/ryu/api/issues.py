@@ -874,15 +874,16 @@ async def squad_evaluated(
     user: User = Depends(current_user),
 ):
     """Registra a decisão do líder da squad (autenticável pelo token rat_)."""
-    from ryu.services import automation as automation_svc
+    from ryu.services import squads as squads_svc
+    from ryu.services.automation import AutomationError
 
     actor_type, actor_id = _actor(user)
     try:
-        return await automation_svc.record_squad_evaluation(
+        return await squads_svc.record_squad_evaluation(
             db, issue_id, actor_type, actor_id,
             outcome=payload.outcome, squad_id=payload.squad_id,
         )
-    except automation_svc.AutomationError as e:
+    except AutomationError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 

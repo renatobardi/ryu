@@ -18,7 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ryu.db import get_db
 from ryu.models import Agent, User, Workspace
-from ryu.services import automation as svc
+from ryu.services import skills as svc
+from ryu.services.automation import AutomationError
 from ryu.services.auth import current_user
 
 router = APIRouter()
@@ -28,7 +29,7 @@ _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
-def _http(e: svc.AutomationError) -> HTTPException:
+def _http(e: AutomationError) -> HTTPException:
     return HTTPException(status_code=e.status_code, detail=e.message)
 
 
@@ -70,7 +71,7 @@ async def create_skill(payload: SkillCreate, db: AsyncSession = Depends(get_db),
             db, payload.workspace_id, payload.name, payload.description, payload.content,
             created_by=user.id,
         )
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return svc.skill_to_dict(skill)
 
@@ -111,7 +112,7 @@ async def import_skill(
             on_conflict=on_conflict,
             created_by=user.id,
         )
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return result
 
@@ -137,7 +138,7 @@ async def import_local_skill(
             on_conflict=payload.on_conflict,
             created_by=user.id,
         )
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return result
 
@@ -146,7 +147,7 @@ async def import_local_skill(
 async def get_skill(skill_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         skill = await svc.get_skill(db, skill_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     agents = await svc.agents_for_skill(db, skill_id)
     d = svc.skill_to_dict(skill)
@@ -158,7 +159,7 @@ async def get_skill(skill_id: str, db: AsyncSession = Depends(get_db), user: Use
 async def patch_skill(skill_id: str, payload: SkillPatch, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         skill = await svc.update_skill(db, skill_id, payload.model_dump(exclude_unset=True))
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return svc.skill_to_dict(skill)
 
@@ -167,7 +168,7 @@ async def patch_skill(skill_id: str, payload: SkillPatch, db: AsyncSession = Dep
 async def delete_skill(skill_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         await svc.delete_skill(db, skill_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
 
 
@@ -175,7 +176,7 @@ async def delete_skill(skill_id: str, db: AsyncSession = Depends(get_db), user: 
 async def attach(skill_id: str, agent_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         await svc.attach_skill(db, skill_id, agent_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
 
 
@@ -189,7 +190,7 @@ async def detach(skill_id: str, agent_id: str, db: AsyncSession = Depends(get_db
 async def list_files(skill_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         return [svc.skill_file_to_dict(f) for f in await svc.list_skill_files(db, skill_id)]
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
 
 
@@ -199,7 +200,7 @@ async def upsert_file(
 ):
     try:
         f = await svc.upsert_skill_file(db, skill_id, payload.path, payload.content)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return svc.skill_file_to_dict(f)
 
@@ -210,7 +211,7 @@ async def delete_file(
 ):
     try:
         await svc.delete_skill_file(db, skill_id, file_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
 
 
@@ -219,7 +220,7 @@ async def delete_file(
 async def list_labels(skill_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         return [svc.label_to_dict(lb) for lb in await svc.list_labels_for_skill(db, skill_id)]
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
 
 
@@ -231,7 +232,7 @@ async def attach_label(
         lb = await svc.attach_label_to_skill(
             db, skill_id, label_id=payload.label_id, name=payload.name, color=payload.color
         )
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return svc.label_to_dict(lb)
 
@@ -242,7 +243,7 @@ async def detach_label(
 ):
     try:
         await svc.get_skill(db, skill_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     await svc.detach_label_from_skill(db, skill_id, label_id)
 
@@ -286,7 +287,7 @@ async def skills_page_create(
     ws = await _workspace_by_slug(db, slug)
     try:
         await svc.create_skill(db, ws.id, name, description, content)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     ctx = await _skills_ctx(db, ws)
     ctx["request"] = request
@@ -305,7 +306,7 @@ async def skills_page_attach(
     ws = await _workspace_by_slug(db, slug)
     try:
         await svc.attach_skill(db, skill_id, agent_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     ctx = await _skills_ctx(db, ws)
     ctx["request"] = request
@@ -339,7 +340,7 @@ async def skills_page_delete(
     ws = await _workspace_by_slug(db, slug)
     try:
         await svc.delete_skill(db, skill_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     ctx = await _skills_ctx(db, ws)
     ctx["request"] = request

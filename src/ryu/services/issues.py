@@ -190,9 +190,9 @@ async def _maybe_enqueue_agent_task(db: AsyncSession, issue: Issue, actor_type: 
     assignee_type='squad' → task de briefing do líder (mesmo trigger no assign e
     na promoção backlog→todo — multica enqueueSquadLeaderTask)."""
     if issue.assignee_type == "squad" and issue.assignee_id:
-        from ryu.services import automation as automation_svc  # lazy: evita ciclo
+        from ryu.services import squads as squads_svc  # lazy: evita ciclo
 
-        return await automation_svc.squad_briefing_on_assign(db, issue, actor_type, actor_id)
+        return await squads_svc.squad_briefing_on_assign(db, issue, actor_type, actor_id)
     if issue.assignee_type != "agent" or issue.assignee_id is None:
         return None
     if issue.status not in ("todo", "in_progress"):
@@ -772,9 +772,9 @@ async def create_comment(
 
     # squad leader evaluation: no_action registrado nesta rodada suprime o
     # comentário do líder (multica comment.go:1351)
-    from ryu.services import automation as automation_svc  # lazy: evita ciclo
+    from ryu.services import squads as squads_svc  # lazy: evita ciclo
 
-    if await automation_svc.should_suppress_leader_comment(db, issue, author_type, author_id):
+    if await squads_svc.should_suppress_leader_comment(db, issue, author_type, author_id):
         raise IssueError(
             "comentário suprimido: o líder registrou no_action para esta rodada", 409
         )
@@ -803,7 +803,7 @@ async def create_comment(
     await hub.publish(issue.workspace_id, "comment:created", comment_to_dict(comment))
     # loop de delegação: comentário em issue de squad (ou @squad) acorda o líder
     try:
-        await automation_svc.handle_comment_squad_triggers(
+        await squads_svc.handle_comment_squad_triggers(
             db, issue, author_type, author_id, body
         )
     except Exception:
