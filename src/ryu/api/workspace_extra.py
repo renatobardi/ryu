@@ -1,6 +1,6 @@
 """Extras de workspace: Search, My Issues, Runtimes e Settings.
 
-- `search_router`: JSON, montar em main.py com prefix="/api/search".
+- `router`: JSON, montar em main.py com prefix="/api/search".
 - `pages_router`: páginas HTML (/w/{slug}/my-issues, /search, /runtimes, /settings), SEM prefixo.
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ from ryu.models import Agent, ChatSession, Issue, Member, User
 from ryu.realtime.hub import hub
 from ryu.services.auth import current_user, current_workspace
 
-search_router = APIRouter()
+router = APIRouter()
 pages_router = APIRouter()
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
@@ -78,7 +78,7 @@ async def _search(db: AsyncSession, workspace_id: str, q: str, limit: int = 20) 
     return {"issues": issues, "agents": agents, "chats": chats}
 
 
-@search_router.get("")
+@router.get("")
 async def api_search(
     workspace_id: str,
     q: str = "",
@@ -160,7 +160,27 @@ async def my_issues_page(slug: str, request: Request, db: AsyncSession = Depends
 @pages_router.get("/w/{slug}/runtimes", response_class=HTMLResponse)
 async def runtimes_page(slug: str, request: Request, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     ws = await current_workspace(slug, db, user)
-    runtimes = [{"name": cli, "path": shutil.which(cli), "available": shutil.which(cli) is not None} for cli in RUNTIME_CLIS]
+    # CLIs detectados no host do servidor (detecção ampla + overrides RYU_<X>_PATH)
+    from ryu.runner.adapters import detect_runtimes
+
+    runtimes = [
+        {"name": r["provider"], "path": r["path"], "available": r["available"]}
+        for r in detect_runtimes()
+    ]
+    for cli in ("git", "node"):
+        runtimes.append({"name": cli, "path": shutil.which(cli), "available": shutil.which(cli) is not None})
+    # runtimes externos registrados por daemons (online/offline por last_seen)
+    from ryu.services import daemon as daemon_svc
+
+    remote = [daemon_svc.runtime_to_dict(rt) for rt in await daemon_svc.list_runtimes(db, ws.id)]
+    for r in remote:
+        runtimes.append(
+            {
+                "name": f"{r['provider']} @ {r['device_name'] or r['daemon_id'] or 'daemon'}",
+                "path": r["version"] or "runtime externo (daemon)",
+                "available": r["status"] == "online",
+            }
+        )
     return templates.TemplateResponse(
         "workspace/runtimes.html",
         {"request": request, "user": user, "workspace": ws, "active_nav": "runtimes", "runtimes": runtimes},
@@ -187,6 +207,10 @@ async def settings_update(
     user: User = Depends(current_user),
 ):
     ws = await current_workspace(slug, db, user)
+    # enforcement de papel: update de workspace = owner/admin (multica)
+    from ryu.services.workspaces import require_role
+
+    await require_role(db, ws.id, user, ("owner", "admin"))
     if name.strip():
         ws.name = name.strip()
     prefix = issue_prefix.strip().upper()

@@ -15,12 +15,31 @@
   </div>
 </div>
 {% else %}
+{% if not pending_task %}
 <p class="text-center text-sm text-neutral-600 py-8">Sem mensagens ainda. Diga oi.</p>
+{% endif %}
 {% endfor %}
-{% if messages and messages[-1].role == 'user' %}
-<div class="flex justify-start">
-  <div class="rounded-xl px-3 py-2 text-sm bg-neutral-800 text-neutral-500 animate-pulse">
-    agente digitando…
+
+{% if pending_task %}
+<div class="flex justify-start" id="chat-partial">
+  <div class="max-w-[75%] rounded-xl px-3 py-2 text-sm bg-neutral-800 text-neutral-100 border border-violet-800/40">
+    <div class="text-[10px] uppercase tracking-wide mb-1 text-violet-400 flex items-center gap-1.5">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"></span>
+      {% if pending_task.status == 'running' %}agente rodando…{% else %}agente na fila…{% endif %}
+    </div>
+    {% if partial_texts %}
+    <div class="whitespace-pre-wrap">{{ partial_texts | join('\n\n') }}</div>
+    {% endif %}
+    {% if partial_activity %}
+    <div class="mt-1 space-y-0.5">
+      {% for line in partial_activity %}
+      <div class="text-[11px] font-mono text-neutral-500 truncate">{{ line }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if not partial_texts and not partial_activity %}
+    <span class="text-neutral-500 animate-pulse">agente digitando…</span>
+    {% endif %}
   </div>
 </div>
 {% endif %}

@@ -63,6 +63,9 @@ def _session_out(s) -> dict:
         "title": s.title,
         "archived": s.archived,
         "pinned": s.pinned,
+        "has_unread": getattr(s, "unread_since", None) is not None,
+        "unread_since": getattr(s, "unread_since", None),
+        "last_read_at": getattr(s, "last_read_at", None),
         "created_at": s.created_at,
         "updated_at": s.updated_at,
     }
@@ -126,6 +129,77 @@ async def list_sessions(
     return [_session_out(s) for s in sessions]
 
 
+# ── Pinned agents (barra de quick-agents) — ANTES de /{session_id} ────
+class PinAgentIn(BaseModel):
+    agent_id: str
+    workspace_id: str | None = None
+    workspace_slug: str | None = None
+
+
+@router.get("/pinned-agents")
+async def list_pinned_agents(
+    workspace_id: str | None = Query(default=None),
+    workspace_slug: str | None = Query(default=None),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ws_id = await _resolve_workspace_id(db, user, workspace_id, workspace_slug)
+    agents = await chat_service.list_pinned_agents(db, workspace_id=ws_id, user_id=user.id)
+    return [
+        {"agent_id": a.id, "name": a.name, "handle": a.handle, "description": a.description}
+        for a in agents
+    ]
+
+
+@router.post("/pinned-agents", status_code=201)
+async def pin_agent(
+    body: PinAgentIn,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ws_id = await _resolve_workspace_id(db, user, body.workspace_id, body.workspace_slug)
+    pin = await chat_service.pin_agent(db, workspace_id=ws_id, user_id=user.id, agent_id=body.agent_id)
+    return {"agent_id": pin.agent_id, "position": pin.position}
+
+
+@router.delete("/pinned-agents/{agent_id}")
+async def unpin_agent(
+    agent_id: str,
+    workspace_id: str | None = Query(default=None),
+    workspace_slug: str | None = Query(default=None),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ws_id = await _resolve_workspace_id(db, user, workspace_id, workspace_slug)
+    await chat_service.unpin_agent(db, workspace_id=ws_id, user_id=user.id, agent_id=agent_id)
+    return {"ok": True}
+
+
+# ── Pending tasks agregados (FAB) — ANTES de /{session_id} ────────────
+@router.get("/pending-tasks")
+async def list_pending_tasks(
+    workspace_id: str | None = Query(default=None),
+    workspace_slug: str | None = Query(default=None),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ws_id = await _resolve_workspace_id(db, user, workspace_id, workspace_slug)
+    tasks = await chat_service.list_pending_tasks(db, workspace_id=ws_id, user_id=user.id)
+    return [chat_service.pending_task_out(t) for t in tasks]
+
+
+@router.get("/pending-tasks/has-any")
+async def has_pending_tasks(
+    workspace_id: str | None = Query(default=None),
+    workspace_slug: str | None = Query(default=None),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ws_id = await _resolve_workspace_id(db, user, workspace_id, workspace_slug)
+    tasks = await chat_service.list_pending_tasks(db, workspace_id=ws_id, user_id=user.id)
+    return {"has_any": len(tasks) > 0, "count": len(tasks)}
+
+
 @router.get("/{session_id}")
 async def get_session(
     session_id: str,
@@ -185,6 +259,72 @@ async def post_message(
     return {"message": _message_out(msg), "task_id": task.id, "task_status": task.status}
 
 
+# ── Pending task da sessão / read / cancel / draft-restores ───────────
+@router.get("/{session_id}/pending-task")
+async def get_pending_task(
+    session_id: str,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    session = await chat_service.get_session(db, session_id, user.id)
+    task = await chat_service.get_pending_task(db, session.id)
+    return {"task": chat_service.pending_task_out(task)}
+
+
+@router.post("/{session_id}/read")
+async def mark_read(
+    session_id: str,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    session = await chat_service.get_session(db, session_id, user.id)
+    session = await chat_service.mark_session_read(db, session)
+    return _session_out(session)
+
+
+@router.post("/{session_id}/cancel")
+async def cancel_pending(
+    session_id: str,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stop: cancela a task de chat pendente da sessão (draft restore quando
+    a resposta ficou vazia)."""
+    session = await chat_service.get_session(db, session_id, user.id)
+    task, restore = await chat_service.cancel_pending_task(db, session)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Nenhuma task pendente nesta sessão")
+    return {
+        "task_id": task.id,
+        "status": task.status,
+        "restore": chat_service.draft_restore_out(restore) if restore else None,
+    }
+
+
+@router.get("/{session_id}/draft-restores")
+async def list_draft_restores(
+    session_id: str,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    session = await chat_service.get_session(db, session_id, user.id)
+    rows = await chat_service.list_draft_restores(db, session.id)
+    return [chat_service.draft_restore_out(r) for r in rows]
+
+
+@router.delete("/{session_id}/draft-restores/{restore_id}")
+async def consume_draft_restore(
+    session_id: str,
+    restore_id: str,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Consome o restore (idempotente: já consumido → ok sem conteúdo)."""
+    session = await chat_service.get_session(db, session_id, user.id)
+    row = await chat_service.consume_draft_restore(db, session.id, restore_id)
+    return {"ok": True, "restore": chat_service.draft_restore_out(row) if row else None}
+
+
 # ── Páginas HTML (HTMX) ───────────────────────────────────────────────
 async def _page_ctx(
     request: Request, slug: str, user: User, db: AsyncSession
@@ -195,12 +335,37 @@ async def _page_ctx(
         select(Agent).where(Agent.workspace_id == ws.id).order_by(Agent.name)
     )
     agents = list(res.scalars().all())
+    pinned_agents = await chat_service.list_pinned_agents(db, workspace_id=ws.id, user_id=user.id)
     return ws, {
         "request": request,
         "workspace": ws,
         "sessions": sessions,
         "agents": agents,
+        "pinned_agents": pinned_agents,
         "user": user,
+    }
+
+
+async def _messages_ctx(
+    request: Request, db: AsyncSession, session, *, mark_read: bool = False
+) -> dict:
+    """Contexto do partial de mensagens: inclui a task pendente e o transcript
+    parcial (streaming da resposta do agente em andamento)."""
+    messages = await chat_service.list_messages(db, session.id)
+    pending_task = await chat_service.get_pending_task(db, session.id)
+    partial = {"texts": [], "activity": []}
+    if pending_task is not None and pending_task.status == "running":
+        partial = await chat_service.partial_transcript(db, pending_task.id)
+    if mark_read and getattr(session, "unread_since", None) is not None:
+        # sessão está aberta/em foco — limpa o cursor de não-lido
+        await chat_service.mark_session_read(db, session)
+    return {
+        "request": request,
+        "messages": messages,
+        "active_session": session,
+        "pending_task": pending_task,
+        "partial_texts": partial["texts"],
+        "partial_activity": partial["activity"],
     }
 
 
@@ -226,8 +391,7 @@ async def chat_session_page(
 ):
     _, ctx = await _page_ctx(request, slug, user, db)
     session = await chat_service.get_session(db, session_id, user.id)
-    messages = await chat_service.list_messages(db, session.id)
-    ctx.update({"active_session": session, "messages": messages})
+    ctx.update(await _messages_ctx(request, db, session, mark_read=True))
     return templates.TemplateResponse("chat/index.html", ctx)
 
 
@@ -243,10 +407,9 @@ async def chat_messages_partial(
 ):
     await current_workspace(slug, db, user)
     session = await chat_service.get_session(db, session_id, user.id)
-    messages = await chat_service.list_messages(db, session.id)
     return templates.TemplateResponse(
         "chat/messages.html",
-        {"request": request, "messages": messages, "active_session": session},
+        await _messages_ctx(request, db, session, mark_read=True),
     )
 
 
@@ -263,10 +426,25 @@ async def chat_send_form(
     await current_workspace(slug, db, user)
     session = await chat_service.get_session(db, session_id, user.id)
     await chat_service.add_user_message(db, session, content)
-    messages = await chat_service.list_messages(db, session.id)
     return templates.TemplateResponse(
-        "chat/messages.html",
-        {"request": request, "messages": messages, "active_session": session},
+        "chat/messages.html", await _messages_ctx(request, db, session)
+    )
+
+
+@pages_router.post("/w/{slug}/chat/{session_id}/cancel", response_class=HTMLResponse)
+async def chat_cancel_form(
+    request: Request,
+    slug: str,
+    session_id: str,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Botão 'parar' do composer — cancela a task pendente e devolve o partial."""
+    await current_workspace(slug, db, user)
+    session = await chat_service.get_session(db, session_id, user.id)
+    await chat_service.cancel_pending_task(db, session)
+    return templates.TemplateResponse(
+        "chat/messages.html", await _messages_ctx(request, db, session)
     )
 
 
@@ -282,3 +460,27 @@ async def chat_new_session(
         db, workspace_id=ws.id, user_id=user.id, agent_id=agent_id
     )
     return RedirectResponse(url=f"/w/{slug}/chat/{session.id}", status_code=303)
+
+
+@pages_router.post("/w/{slug}/chat/pin-agent")
+async def chat_pin_agent_form(
+    slug: str,
+    agent_id: str = Form(...),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ws = await current_workspace(slug, db, user)
+    await chat_service.pin_agent(db, workspace_id=ws.id, user_id=user.id, agent_id=agent_id)
+    return RedirectResponse(url=f"/w/{slug}/chat", status_code=303)
+
+
+@pages_router.post("/w/{slug}/chat/unpin-agent/{agent_id}")
+async def chat_unpin_agent_form(
+    slug: str,
+    agent_id: str,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ws = await current_workspace(slug, db, user)
+    await chat_service.unpin_agent(db, workspace_id=ws.id, user_id=user.id, agent_id=agent_id)
+    return RedirectResponse(url=f"/w/{slug}/chat", status_code=303)

@@ -66,6 +66,9 @@
       {{ nav_item('chat',      'Chat',      '/w/' ~ workspace.slug ~ '/chat',      '💬') }}
       {{ nav_item('my_issues', 'My Issues', '/w/' ~ workspace.slug ~ '/my-issues', '👤') }}
 
+      <!-- Pinned items (issues/projects fixados pelo usuário) -->
+      <div hx-get="/w/{{ workspace.slug }}/pins" hx-trigger="load" hx-swap="innerHTML"></div>
+
       <div class="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wider text-zinc-600">Workspace</div>
       {{ nav_item('board',      'Issues',     '/w/' ~ workspace.slug ~ '/board',      '▦') }}
       {{ nav_item('projects',   'Projects',   '/w/' ~ workspace.slug ~ '/projects',   '📁') }}
@@ -75,6 +78,7 @@
       {{ nav_item('usage',      'Usage',      '/w/' ~ workspace.slug ~ '/usage',      '📊') }}
 
       <div class="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wider text-zinc-600">Configure</div>
+      {{ nav_item('members',  'Members',  '/w/' ~ workspace.slug ~ '/members',  '🧑‍🤝‍🧑') }}
       {{ nav_item('runtimes', 'Runtimes', '/w/' ~ workspace.slug ~ '/runtimes', '🧩') }}
       {{ nav_item('skills',   'Skills',   '/w/' ~ workspace.slug ~ '/skills',   '📚') }}
       {{ nav_item('settings', 'Settings', '/w/' ~ workspace.slug ~ '/settings', '⚙️') }}
@@ -112,6 +116,32 @@
 </div>
 
 <script>
+// ── CSRF: cookie legível ryu_csrf → header X-CSRF-Token em requests mutantes ──
+function ryuCsrfToken() {
+  const m = document.cookie.match(/(?:^|;\s*)ryu_csrf=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+document.body.addEventListener('htmx:configRequest', (e) => {
+  const t = ryuCsrfToken();
+  if (t) e.detail.headers['X-CSRF-Token'] = t;
+});
+(function () {
+  const _fetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    init = init || {};
+    const method = ((init.method) || (input && input.method) || 'GET').toUpperCase();
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && url.startsWith('/')) {
+      const t = ryuCsrfToken();
+      if (t) {
+        init.headers = new Headers(init.headers || (input && input.headers) || {});
+        if (!init.headers.has('X-CSRF-Token')) init.headers.set('X-CSRF-Token', t);
+      }
+    }
+    return _fetch(input, init);
+  };
+})();
+
 // ⌘K / Ctrl+K foca a busca da sidebar
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {

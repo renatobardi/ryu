@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ryu.models import Agent, AgentTask, InboxItem
+from ryu.models import Agent, AgentTask, InboxItem, Issue, Member, NotificationPreference
 from ryu.realtime.hub import hub
 
 SEVERITIES = ["action_required", "attention", "info"]
@@ -40,6 +40,23 @@ def item_to_dict(item: InboxItem) -> dict:
     }
 
 
+# ── Preferências de notificação (multica notification_preference) ─────
+async def is_muted(db: AsyncSession, workspace_id: str, user_id: str, group: str | None) -> bool:
+    """True quando o grupo está 'muted' nas preferências do (workspace, user)."""
+    if not group:
+        return False
+    res = await db.execute(
+        select(NotificationPreference).where(
+            NotificationPreference.workspace_id == workspace_id,
+            NotificationPreference.user_id == user_id,
+        )
+    )
+    row = res.scalars().first()
+    if row is None:
+        return False
+    return (row.preferences or {}).get(group) == "muted"
+
+
 # ── Notify (helper usado por outros domínios) ─────────────────────────
 async def notify(
     db: AsyncSession,
@@ -49,9 +66,16 @@ async def notify(
     title: str,
     body: str = "",
     issue_id: str | None = None,
-) -> InboxItem:
+    group: str | None = None,
+) -> InboxItem | None:
     if severity not in SEVERITIES:
         severity = "info"
+    # preferências: grupo mutado suprime a criação do item
+    try:
+        if await is_muted(db, workspace_id, user_id, group):
+            return None
+    except Exception:
+        pass  # preferência nunca derruba a notificação
     item = InboxItem(
         workspace_id=workspace_id,
         user_id=user_id,
@@ -137,6 +161,87 @@ async def archive_items(db: AsyncSession, user_id: str, item_ids: list[str], arc
     )
     await db.commit()
     return res.rowcount or 0
+
+
+async def unarchive_item(db: AsyncSession, user_id: str, item_id: str) -> InboxItem | None:
+    """Restaura um item arquivado (mantém `read` intocado — paridade multica)."""
+    res = await db.execute(
+        select(InboxItem).where(InboxItem.id == item_id, InboxItem.user_id == user_id)
+    )
+    item = res.scalars().first()
+    if item is None:
+        return None
+    item.archived = False
+    await db.commit()
+    await hub.publish(item.workspace_id, "inbox:unarchived", {"item_id": item.id})
+    return item
+
+
+async def archive_all(db: AsyncSession, workspace_id: str, user_id: str) -> int:
+    res = await db.execute(
+        update(InboxItem)
+        .where(
+            InboxItem.workspace_id == workspace_id,
+            InboxItem.user_id == user_id,
+            InboxItem.archived == False,  # noqa: E712
+        )
+        .values(archived=True)
+    )
+    await db.commit()
+    return res.rowcount or 0
+
+
+async def archive_all_read(db: AsyncSession, workspace_id: str, user_id: str) -> int:
+    res = await db.execute(
+        update(InboxItem)
+        .where(
+            InboxItem.workspace_id == workspace_id,
+            InboxItem.user_id == user_id,
+            InboxItem.archived == False,  # noqa: E712
+            InboxItem.read == True,  # noqa: E712
+        )
+        .values(archived=True)
+    )
+    await db.commit()
+    return res.rowcount or 0
+
+
+async def archive_completed(db: AsyncSession, workspace_id: str, user_id: str) -> int:
+    """Arquiva notificações cujas issues estão done/cancelled (multica)."""
+    done_ids = select(Issue.id).where(
+        Issue.workspace_id == workspace_id, Issue.status.in_(["done", "cancelled"])
+    )
+    res = await db.execute(
+        update(InboxItem)
+        .where(
+            InboxItem.workspace_id == workspace_id,
+            InboxItem.user_id == user_id,
+            InboxItem.archived == False,  # noqa: E712
+            InboxItem.issue_id.in_(done_ids),
+        )
+        .values(archived=True)
+    )
+    await db.commit()
+    return res.rowcount or 0
+
+
+async def unread_summary(db: AsyncSession, user_id: str) -> list[dict]:
+    """Contagem de não lidos por workspace do usuário (badge do switcher)."""
+    stmt = (
+        select(InboxItem.workspace_id, func.count().label("count"))
+        .join(
+            Member,
+            (Member.workspace_id == InboxItem.workspace_id) & (Member.user_id == InboxItem.user_id),
+        )
+        .where(
+            InboxItem.user_id == user_id,
+            InboxItem.read == False,  # noqa: E712
+            InboxItem.archived == False,  # noqa: E712
+        )
+        .group_by(InboxItem.workspace_id)
+    )
+    rows = (await db.execute(stmt)).all()
+    return [{"workspace_id": ws_id, "count": int(count)} for ws_id, count in rows]
 
 
 # ── Usage ─────────────────────────────────────────────────────────────

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Members — {{ workspace.name }}{% endblock %}
+{% block content %}
+<div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+  <h1 class="text-lg font-semibold text-zinc-100">Members</h1>
+  <span class="text-xs text-zinc-500">seu papel: <span class="font-mono">{{ my_role }}</span></span>
+</div>
+
+<div class="px-6 py-6 space-y-8 max-w-3xl">
+  {% if is_admin %}
+  <section>
+    <h2 class="text-sm font-medium text-zinc-300 mb-3">Convidar membro</h2>
+    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex gap-2 items-center">
+      <input id="invite-email" type="email" placeholder="email@exemplo.com" aria-label="E-mail do convidado"
+             class="bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-sm flex-1 focus:outline-none focus:border-violet-600">
+      <select id="invite-role" aria-label="Papel do convidado" class="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-sm">
+        <option value="member">member</option>
+        <option value="admin">admin</option>
+      </select>
+      <button onclick="sendInvite()" class="bg-violet-600 hover:bg-violet-500 text-white text-sm px-4 py-1.5 rounded-md">Convidar</button>
+    </div>
+    <p id="invite-msg" class="text-xs text-zinc-500 mt-2"></p>
+  </section>
+  {% endif %}
+
+  <section>
+    <h2 class="text-sm font-medium text-zinc-300 mb-3">Membros ({{ members|length }})</h2>
+    <ul class="bg-zinc-900 border border-zinc-800 rounded-lg divide-y divide-zinc-800/60">
+      {% for m, u in members %}
+      <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
+        <div class="flex-1 min-w-0">
+          <div class="text-zinc-200 truncate">{{ u.name or u.email }}</div>
+          <div class="text-xs text-zinc-500 truncate">{{ u.email }}</div>
+        </div>
+        {% if is_admin and u.id != user.id %}
+        <select onchange="changeRole('{{ m.id }}', this.value)" aria-label="Papel do membro"
+                class="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-xs">
+          {% for r in ['owner', 'admin', 'member'] %}
+          <option value="{{ r }}" {% if m.role == r %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+        <button onclick="removeMember('{{ m.id }}')" class="text-xs text-red-400 hover:text-red-300">remover</button>
+        {% else %}
+        <span class="text-xs font-mono text-zinc-400">{{ m.role }}</span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section>
+    <h2 class="text-sm font-medium text-zinc-300 mb-3">Convites pendentes ({{ invitations|length }})</h2>
+    {% if invitations %}
+    <ul class="bg-zinc-900 border border-zinc-800 rounded-lg divide-y divide-zinc-800/60">
+      {% for inv in invitations %}
+      <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
+        <div class="flex-1 min-w-0">
+          <div class="text-zinc-200 truncate">{{ inv.invitee_email }}</div>
+          <div class="text-xs text-zinc-500">papel: {{ inv.role }} · expira {{ inv.expires_at }}</div>
+        </div>
+        {% if is_admin %}
+        <button onclick="revokeInvite('{{ inv.id }}')" class="text-xs text-red-400 hover:text-red-300">revogar</button>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-xs text-zinc-500">Nenhum convite pendente.</p>
+    {% endif %}
+  </section>
+
+  {% if my_role != 'owner' or members|length > 1 %}
+  <section>
+    <button onclick="leaveWorkspace()" class="bg-zinc-800 hover:bg-zinc-700 text-red-300 text-sm px-4 py-1.5 rounded-md">Sair do workspace</button>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const WS_ID = "{{ workspace.id }}";
+async function sendInvite() {
+  const email = document.getElementById('invite-email').value.trim();
+  const role = document.getElementById('invite-role').value;
+  const msg = document.getElementById('invite-msg');
+  const r = await fetch(`/api/workspaces/${WS_ID}/members`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email, role}),
+  });
+  const data = await r.json();
+  if (r.ok) { window.location.reload(); }
+  else { msg.textContent = data.detail || 'erro ao convidar'; msg.className = 'text-xs text-red-400 mt-2'; }
+}
+async function changeRole(memberId, role) {
+  const r = await fetch(`/api/workspaces/${WS_ID}/members/${memberId}`, {
+    method: 'PATCH', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({role}),
+  });
+  if (!r.ok) { alert((await r.json()).detail || 'erro'); }
+  window.location.reload();
+}
+async function removeMember(memberId) {
+  if (!confirm('Remover este membro?')) return;
+  const r = await fetch(`/api/workspaces/${WS_ID}/members/${memberId}`, {method: 'DELETE'});
+  if (!r.ok) { alert((await r.json()).detail || 'erro'); }
+  window.location.reload();
+}
+async function revokeInvite(invId) {
+  const r = await fetch(`/api/workspaces/${WS_ID}/invitations/${invId}`, {method: 'DELETE'});
+  if (!r.ok) { alert((await r.json()).detail || 'erro'); }
+  window.location.reload();
+}
+async function leaveWorkspace() {
+  if (!confirm('Sair deste workspace?')) return;
+  const r = await fetch(`/api/workspaces/${WS_ID}/leave`, {method: 'POST'});
+  if (!r.ok) { alert((await r.json()).detail || 'erro'); return; }
+  window.location.href = '/';
+}
+</script>
+{% endblock %}

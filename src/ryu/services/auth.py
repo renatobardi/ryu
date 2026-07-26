@@ -9,6 +9,7 @@ Exporta:
 from __future__ import annotations
 
 import hashlib
+import hmac
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -26,9 +27,14 @@ from ryu.models import ApiToken, Member, User, VerificationCode, Workspace
 log = structlog.get_logger("ryu.auth")
 
 AUTH_COOKIE = "ryu_auth"
+CSRF_COOKIE = "ryu_csrf"
 JWT_ALGO = "HS256"
 JWT_TTL_DAYS = 30
 CODE_TTL_MINUTES = 15
+CODE_MAX_ATTEMPTS = 5
+PAT_PREFIX_LEN = 12
+PAT_RENEW_THRESHOLD_DAYS = 7
+PAT_RENEW_EXTENSION_DAYS = 90
 
 
 def _now() -> datetime:
@@ -42,6 +48,81 @@ def _sha256(raw: str) -> str:
 def _slugify(text: str) -> str:
     text = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return text or "ws"
+
+
+# ── CSRF (paridade multica auth/cookie.go) ────────────────────────────
+def generate_csrf_token(auth_token: str) -> str:
+    """hex(nonce) + '.' + hex(HMAC-SHA256(nonce, key=auth_token))."""
+    nonce = secrets.token_bytes(16)
+    sig = hmac.new(auth_token.encode(), nonce, hashlib.sha256).hexdigest()
+    return nonce.hex() + "." + sig
+
+
+def validate_csrf_token(csrf_header: str, auth_cookie: str) -> bool:
+    if not csrf_header or not auth_cookie:
+        return False
+    parts = csrf_header.split(".", 1)
+    if len(parts) != 2:
+        return False
+    try:
+        nonce = bytes.fromhex(parts[0])
+    except ValueError:
+        return False
+    expected = hmac.new(auth_cookie.encode(), nonce, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, parts[1])
+
+
+def set_auth_cookies(response, token: str) -> None:
+    """Cookie httponly de auth + cookie legível de CSRF."""
+    max_age = JWT_TTL_DAYS * 24 * 3600
+    response.set_cookie(
+        key=AUTH_COOKIE, value=token, httponly=True, samesite="lax", max_age=max_age, path="/",
+    )
+    response.set_cookie(
+        key=CSRF_COOKIE,
+        value=generate_csrf_token(token),
+        httponly=False,
+        samesite="lax",
+        max_age=max_age,
+        path="/",
+    )
+
+
+def clear_auth_cookies(response) -> None:
+    response.delete_cookie(AUTH_COOKIE, path="/")
+    response.delete_cookie(CSRF_COOKIE, path="/")
+
+
+# ── Signup gate (paridade multica checkSignupAllowed) ─────────────────
+def _csv_list(raw: str) -> list[str]:
+    return [x.strip().lower() for x in (raw or "").split(",") if x.strip()]
+
+
+def check_signup_allowed(email: str, is_new_user: bool) -> None:
+    """Levanta 403 quando um usuário NOVO não pode se cadastrar.
+
+    Precedência multica: allowlist de e-mail vence, depois domínio, depois
+    allow_signup; allowlist configurada sem match bloqueia mesmo com
+    allow_signup=true. Usuários existentes sempre podem logar.
+    """
+    if not is_new_user:
+        return
+    email = email.strip().lower()
+    domain = email.split("@", 1)[1] if "@" in email else ""
+    allowed_emails = _csv_list(settings.allowed_emails)
+    allowed_domains = _csv_list(settings.allowed_email_domains)
+    if allowed_emails and email in allowed_emails:
+        return
+    if allowed_domains and domain in allowed_domains:
+        return
+    if not settings.allow_signup:
+        raise HTTPException(
+            status_code=403, detail="user registration is disabled on this self-hosted instance"
+        )
+    if allowed_emails or allowed_domains:
+        raise HTTPException(
+            status_code=403, detail="email address or domain not allowed on this instance"
+        )
 
 
 # ── JWT ───────────────────────────────────────────────────────────────
@@ -64,8 +145,35 @@ def decode_jwt(token: str) -> str | None:
 
 # ── Verification codes ────────────────────────────────────────────────
 async def request_code(db: AsyncSession, email: str) -> None:
-    """Gera código de 6 dígitos, persiste e IMPRIME no log (sem SMTP)."""
+    """Gera código de 6 dígitos, persiste e envia via EmailService.
+
+    Gate de signup ANTES de enviar (multica SendCode chama checkSignupAllowed)
+    e cooldown de 60s por e-mail (429).
+    """
     email = email.strip().lower()
+
+    res = await db.execute(select(User).where(User.email == email))
+    is_new_user = res.scalars().first() is None
+    check_signup_allowed(email, is_new_user)
+
+    # cooldown: máx. 1 código por auth_code_resend_seconds por e-mail
+    cooldown = settings.auth_code_resend_seconds
+    if cooldown > 0:
+        res = await db.execute(
+            select(VerificationCode)
+            .where(VerificationCode.email == email)
+            .order_by(VerificationCode.created_at.desc())
+        )
+        latest = res.scalars().first()
+        if latest is not None and latest.created_at is not None:
+            created = latest.created_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if (_now() - created).total_seconds() < cooldown:
+                raise HTTPException(
+                    status_code=429, detail="please wait before requesting another code"
+                )
+
     code = f"{secrets.randbelow(1_000_000):06d}"
     vc = VerificationCode(
         email=email,
@@ -74,21 +182,27 @@ async def request_code(db: AsyncSession, email: str) -> None:
     )
     db.add(vc)
     await db.commit()
-    print(f"[ryu-auth] verification code for {email}: {code}", flush=True)
-    log.info("verification_code_issued", email=email, code=code)
+    from ryu.services.email import get_email_service
+
+    try:
+        await get_email_service().send_verification_code(email, code)
+    except Exception as exc:  # noqa: BLE001
+        log.error("verification_code_email_failed", email=email, error=str(exc))
+        raise HTTPException(status_code=500, detail="failed to send verification code") from exc
+    log.info("verification_code_issued", email=email)
 
 
 async def _consume_code(db: AsyncSession, email: str, code: str) -> bool:
-    if settings.dev_verification_code and code == settings.dev_verification_code:
+    code = code.strip()
+    if settings.dev_verification_code and secrets.compare_digest(
+        code, settings.dev_verification_code
+    ):
         return True
+    # só o código MAIS RECENTE não usado/não expirado com attempts < 5 vale
     res = await db.execute(
         select(VerificationCode)
-        .where(
-            VerificationCode.email == email,
-            VerificationCode.code == code,
-            VerificationCode.used.is_(False),
-        )
-        .order_by(VerificationCode.expires_at.desc())
+        .where(VerificationCode.email == email, VerificationCode.used.is_(False))
+        .order_by(VerificationCode.created_at.desc())
     )
     vc = res.scalars().first()
     if vc is None:
@@ -96,45 +210,62 @@ async def _consume_code(db: AsyncSession, email: str, code: str) -> bool:
     expires = vc.expires_at
     if expires.tzinfo is None:
         expires = expires.replace(tzinfo=timezone.utc)
-    if expires < _now():
+    if expires < _now() or (vc.attempts or 0) >= CODE_MAX_ATTEMPTS:
+        return False
+    if not secrets.compare_digest(code, vc.code):
+        vc.attempts = (vc.attempts or 0) + 1
+        await db.commit()
         return False
     vc.used = True
     await db.commit()
     return True
 
 
+async def find_or_create_user(db: AsyncSession, email: str) -> tuple[User, bool]:
+    """Retorna (user, is_new). Aplica o gate de signup (403) para usuário novo."""
+    email = email.strip().lower()
+    res = await db.execute(select(User).where(User.email == email))
+    user = res.scalars().first()
+    is_new = user is None
+    check_signup_allowed(email, is_new)
+    if user is None:
+        user = User(email=email, name=email.split("@")[0])
+        db.add(user)
+        await db.flush()
+    return user, is_new
+
+
+async def ensure_personal_workspace(db: AsyncSession, user: User) -> None:
+    """Workspace pessoal + member owner no primeiro login (pula slugs reservados)."""
+    from ryu.services.workspaces import is_reserved_slug
+
+    res = await db.execute(select(Member).where(Member.user_id == user.id))
+    if res.scalars().first() is not None:
+        return
+    base_slug = _slugify(user.email.split("@")[0])
+    slug = base_slug
+    i = 1
+    while True:
+        if not is_reserved_slug(slug):
+            res = await db.execute(select(Workspace).where(Workspace.slug == slug))
+            if res.scalars().first() is None:
+                break
+        i += 1
+        slug = f"{base_slug}-{i}"
+    ws = Workspace(slug=slug, name=f"{user.name or base_slug}'s workspace")
+    db.add(ws)
+    await db.flush()
+    db.add(Member(workspace_id=ws.id, user_id=user.id, role="owner"))
+
+
 async def verify_code(db: AsyncSession, email: str, code: str) -> User:
-    """Valida código; cria User (se allow_signup) + workspace pessoal no 1º login."""
+    """Valida código; cria User (se permitido) + workspace pessoal no 1º login."""
     email = email.strip().lower()
     if not await _consume_code(db, email, code):
         raise HTTPException(status_code=400, detail="Código inválido ou expirado")
 
-    res = await db.execute(select(User).where(User.email == email))
-    user = res.scalars().first()
-    if user is None:
-        if not settings.allow_signup:
-            raise HTTPException(status_code=403, detail="Cadastro desabilitado")
-        user = User(email=email, name=email.split("@")[0])
-        db.add(user)
-        await db.flush()
-
-    # workspace pessoal + member owner no primeiro login
-    res = await db.execute(select(Member).where(Member.user_id == user.id))
-    if res.scalars().first() is None:
-        base_slug = _slugify(email.split("@")[0])
-        slug = base_slug
-        i = 1
-        while True:
-            res = await db.execute(select(Workspace).where(Workspace.slug == slug))
-            if res.scalars().first() is None:
-                break
-            i += 1
-            slug = f"{base_slug}-{i}"
-        ws = Workspace(slug=slug, name=f"{user.name or base_slug}'s workspace")
-        db.add(ws)
-        await db.flush()
-        db.add(Member(workspace_id=ws.id, user_id=user.id, role="owner"))
-
+    user, _ = await find_or_create_user(db, email)
+    await ensure_personal_workspace(db, user)
     await db.commit()
     return user
 
@@ -143,9 +274,21 @@ async def verify_code(db: AsyncSession, email: str, code: str) -> User:
 _TOKEN_PREFIXES = {"ryu_": "pat", "rdt_": "daemon", "rat_": "task"}
 
 
-async def create_pat(db: AsyncSession, user_id: str, name: str = "") -> tuple[str, ApiToken]:
+async def create_pat(
+    db: AsyncSession, user_id: str, name: str = "", expires_in_days: int | None = None
+) -> tuple[str, ApiToken]:
     raw = "ryu_" + secrets.token_urlsafe(32)
-    row = ApiToken(token_hash=_sha256(raw), kind="pat", user_id=user_id, name=name)
+    expires_at = None
+    if expires_in_days is not None and expires_in_days > 0:
+        expires_at = _now() + timedelta(days=expires_in_days)
+    row = ApiToken(
+        token_hash=_sha256(raw),
+        kind="pat",
+        user_id=user_id,
+        name=name,
+        token_prefix=raw[:PAT_PREFIX_LEN],
+        expires_at=expires_at,
+    )
     db.add(row)
     await db.commit()
     return raw, row
@@ -186,7 +329,46 @@ async def resolve_token(db: AsyncSession, raw: str) -> ApiToken | None:
             exp = exp.replace(tzinfo=timezone.utc)
         if exp < _now():
             return None
+    # last_used_at (multica PAT metadata) — atualiza no máx. 1x/min p/ reduzir writes
+    try:
+        last = tok.last_used_at
+        if last is not None and last.tzinfo is None:
+            last = last.replace(tzinfo=timezone.utc)
+        if last is None or (_now() - last).total_seconds() > 60:
+            tok.last_used_at = _now()
+            await db.commit()
+    except Exception:  # noqa: BLE001
+        pass
     return tok
+
+
+async def renew_current_pat(db: AsyncSession, raw: str) -> dict:
+    """POST /api/auth/tokens/current/renew (multica RenewCurrentPersonalAccessToken).
+
+    Estende expires_at em 90 dias APENAS quando restam <7 dias.
+    renewed=false quando fora da janela ou quando expires_at é NULL.
+    """
+    if not raw.startswith("ryu_"):
+        raise HTTPException(status_code=400, detail="only personal access tokens can be renewed")
+    res = await db.execute(
+        select(ApiToken).where(
+            ApiToken.token_hash == _sha256(raw), ApiToken.kind == "pat",
+            ApiToken.revoked.is_(False),
+        )
+    )
+    tok = res.scalars().first()
+    if tok is None:
+        raise HTTPException(status_code=401, detail="token is no longer valid")
+    if tok.expires_at is None:
+        return {"expires_at": None, "renewed": False}
+    exp = tok.expires_at
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if exp - _now() > timedelta(days=PAT_RENEW_THRESHOLD_DAYS):
+        return {"expires_at": exp.isoformat(), "renewed": False}
+    tok.expires_at = _now() + timedelta(days=PAT_RENEW_EXTENSION_DAYS)
+    await db.commit()
+    return {"expires_at": tok.expires_at.isoformat(), "renewed": True}
 
 
 # ── Dependencies ──────────────────────────────────────────────────────

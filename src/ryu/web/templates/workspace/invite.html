@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Convite — Ryu{% endblock %}
+{% block content %}
+<div class="min-h-full flex items-center justify-center p-8">
+  <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 max-w-md w-full text-center space-y-4">
+    <div class="w-10 h-10 mx-auto rounded-lg bg-violet-600 flex items-center justify-center text-white font-bold">R</div>
+    {% if invitation.status != 'pending' %}
+      <h1 class="text-lg font-semibold text-zinc-100">Convite {{ invitation.status }}</h1>
+      <p class="text-sm text-zinc-400">Este convite não está mais pendente.</p>
+    {% elif expired %}
+      <h1 class="text-lg font-semibold text-zinc-100">Convite expirado</h1>
+      <p class="text-sm text-zinc-400">Peça um novo convite ao administrador do workspace.</p>
+    {% else %}
+      <h1 class="text-lg font-semibold text-zinc-100">
+        Você foi convidado para {{ invite_workspace.name if invite_workspace else 'um workspace' }}
+      </h1>
+      <p class="text-sm text-zinc-400">Papel: <span class="font-mono">{{ invitation.role }}</span></p>
+      <div class="flex gap-3 justify-center pt-2">
+        <button onclick="acceptInvite()" class="bg-violet-600 hover:bg-violet-500 text-white text-sm px-5 py-2 rounded-md">Aceitar</button>
+        <button onclick="declineInvite()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm px-5 py-2 rounded-md">Recusar</button>
+      </div>
+      <p id="invite-err" class="text-xs text-red-400"></p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const INV_ID = "{{ invitation.id }}";
+const WS_SLUG = "{{ invite_workspace.slug if invite_workspace else '' }}";
+async function acceptInvite() {
+  const r = await fetch(`/api/invitations/${INV_ID}/accept`, {method: 'POST'});
+  if (r.ok) { window.location.href = WS_SLUG ? `/w/${WS_SLUG}/board` : '/'; }
+  else { document.getElementById('invite-err').textContent = (await r.json()).detail || 'erro'; }
+}
+async function declineInvite() {
+  const r = await fetch(`/api/invitations/${INV_ID}/decline`, {method: 'POST'});
+  if (r.ok || r.status === 204) { window.location.href = '/'; }
+  else { document.getElementById('invite-err').textContent = (await r.json()).detail || 'erro'; }
+}
+</script>
+{% endblock %}

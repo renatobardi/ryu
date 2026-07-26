@@ -96,6 +96,63 @@ async def archive(
     return {"updated": await svc.archive_items(db, user.id, payload.item_ids)}
 
 
+@router.post("/archive-all")
+async def archive_all(
+    workspace_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    return {"count": await svc.archive_all(db, workspace_id, user.id)}
+
+
+@router.post("/archive-all-read")
+async def archive_all_read(
+    workspace_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    return {"count": await svc.archive_all_read(db, workspace_id, user.id)}
+
+
+@router.post("/archive-completed")
+async def archive_completed(
+    workspace_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    return {"count": await svc.archive_completed(db, workspace_id, user.id)}
+
+
+@router.get("/unread-summary")
+async def unread_summary(
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    return await svc.unread_summary(db, user.id)
+
+
+@router.get("/archived")
+async def list_archived(
+    workspace_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    items = await svc.list_items(db, workspace_id, user.id, archived=True, limit=200)
+    return [svc.item_to_dict(i) for i in items]
+
+
+@router.post("/{item_id}/unarchive")
+async def unarchive(
+    item_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    item = await svc.unarchive_item(db, user.id, item_id)
+    if item is None:
+        raise HTTPException(404, "item não encontrado")
+    return svc.item_to_dict(item)
+
+
 # ── Usage JSON ────────────────────────────────────────────────────────
 @usage_router.get("/summary")
 async def get_usage_summary(

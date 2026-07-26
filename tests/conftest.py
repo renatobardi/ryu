@@ -19,6 +19,10 @@ os.environ["RYU_DATA_DIR"] = str(_TMP)
 os.environ["RYU_WORKSPACES_ROOT"] = str(_TMP / "workspaces")
 os.environ["RYU_UPLOADS_DIR"] = str(_TMP / "uploads")
 os.environ["RYU_JWT_SECRET"] = "test-secret-0123456789abcdef0123456789abcdef"
+# workspace-auth ciclo 1: sem cooldown/rate-limit nos testes (logins repetidos)
+os.environ["RYU_AUTH_CODE_RESEND_SECONDS"] = "0"
+os.environ["RYU_RATE_LIMIT_AUTH"] = "0"
+os.environ["RYU_RATE_LIMIT_AUTH_VERIFY"] = "0"
 
 import httpx  # noqa: E402
 import pytest_asyncio  # noqa: E402
@@ -50,4 +54,8 @@ async def login(client: httpx.AsyncClient, email: str) -> dict:
     data = r.json()
     assert data["ok"] is True
     assert data["workspaces"], "workspace pessoal deveria ser criado no 1º login"
+    # auth via cookie exige X-CSRF-Token em métodos mutantes (workspace-auth ciclo 1)
+    csrf = client.cookies.get("ryu_csrf")
+    if csrf:
+        client.headers["X-CSRF-Token"] = csrf
     return data
