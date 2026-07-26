@@ -92,6 +92,9 @@ registrada no `readme.md` do pacote.
   --prio-low-bg: var(--gray-150); --prio-low-fg: var(--gray-500);
   --state-on-bg: rgb(5 150 105 / .12); --state-on-fg: var(--emerald-600);
   --state-off-bg: var(--gray-150); --state-off-fg: var(--gray-500);
+  --danger-bg: rgb(239 68 68 / .12); --danger-fg: var(--red-500);
+  --warning-bg: rgb(217 119 6 / .12); --warning-fg: var(--amber-500);
+  --success-bg: rgb(5 150 105 / .12); --success-fg: var(--emerald-600);
   --scrollbar-thumb: var(--gray-300); --scrollbar-thumb-hover: var(--gray-400);
   --chat-bubble-agent-bg: var(--gray-100); --chat-bubble-agent-fg: var(--gray-900);
   --chat-bubble-system-bg: rgb(217 119 6 / .1); --chat-bubble-system-fg: var(--amber-500);
@@ -174,6 +177,9 @@ registrada no `readme.md` do pacote.
   --prio-low-bg: var(--gray-150); --prio-low-fg: var(--gray-600);
   --state-on-bg: rgb(5 150 105 / .2); --state-on-fg: #34d399;
   --state-off-bg: var(--gray-150); --state-off-fg: var(--gray-600);
+  --danger-bg: rgb(239 68 68 / .18); --danger-fg: #f87171;
+  --warning-bg: rgb(245 158 11 / .16); --warning-fg: #fbbf24;
+  --success-bg: rgb(5 150 105 / .2); --success-fg: #34d399;
   --scrollbar-thumb: var(--gray-300); --scrollbar-thumb-hover: var(--gray-400);
   --chat-bubble-agent-bg: var(--gray-100); --chat-bubble-agent-fg: var(--gray-900);
   --chat-bubble-system-bg: rgb(245 158 11 / .14); --chat-bubble-system-fg: #fbbf24;
@@ -267,6 +273,10 @@ tailwind.config = {
         'state-on-bg': 'var(--state-on-bg)', 'state-on-fg': 'var(--state-on-fg)',
         'state-off-bg': 'var(--state-off-bg)', 'state-off-fg': 'var(--state-off-fg)',
 
+        'danger-bg': 'var(--danger-bg)', 'danger-fg': 'var(--danger-fg)',
+        'warning-bg': 'var(--warning-bg)', 'warning-fg': 'var(--warning-fg)',
+        'success-bg': 'var(--success-bg)', 'success-fg': 'var(--success-fg)',
+
         'chat-bubble-agent-bg': 'var(--chat-bubble-agent-bg)', 'chat-bubble-agent-fg': 'var(--chat-bubble-agent-fg)',
         'chat-bubble-system-bg': 'var(--chat-bubble-system-bg)', 'chat-bubble-system-fg': 'var(--chat-bubble-system-fg)',
         'chat-list-bg': 'var(--chat-list-bg)', 'chat-panel-bg': 'var(--chat-panel-bg)',
@@ -348,6 +358,12 @@ underscore (`in_progress`, `action_required`) e os tokens são hifenizados
 sempre de um mapa explícito dentro de um macro, como
 `_components/data/status_pill.html` já faz. Status de issue precisará do
 macro equivalente ao `StatusDot` do DS.
+
+**Erro, aviso e sucesso têm token próprio.** `danger`, `warning` e `success`
+(pares `*-bg`/`*-fg`) cobrem mensagem de erro, alerta e confirmação. Não use
+`red-*`/`amber-*`/`emerald-*` nativos do Tailwind para isso: eles são fixos, e
+os tokens são calibrados por tema — um `bg-emerald-600/20` que funciona no
+escuro fica lavado no claro.
 
 **Não aplique opacidade Tailwind sobre esses tokens.** `bg-x/15` só funciona
 em cor declarada como função `rgb(<alpha-value> …)`; as nossas são `var()`
