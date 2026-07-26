@@ -1,0 +1,17 @@
+{#
+  Tradução de docs/Ryu Design System/components/data/CountBadge.jsx.
+
+  Badge de contagem usado no NavItem (inbox) e TopBar. Sempre renderizado
+  para permitir atualização via JS, mas fica oculto quando count == 0 e
+  hide_zero está ativo.
+#}
+{% macro count_badge(count=0, tone='accent', hide_zero=True, attrs={}) %}
+  {% set tone_classes = {
+    'accent': 'bg-accent text-text-on-accent',
+    'neutral': 'bg-surface-active text-text-muted',
+  } %}
+  <span class="inline-block min-w-[18px] text-center text-2xs font-semibold rounded-full px-1.5 py-0.5 {{ tone_classes.get(tone, tone_classes['accent']) }} {{ 'hidden' if hide_zero and count == 0 else '' }}"
+        {% for k, v in attrs.items() %}{{ k }}="{{ v }}" {% endfor %}>
+    {{ count }}
+  </span>
+{% endmacro %}

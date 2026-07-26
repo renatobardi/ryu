@@ -1,4 +1,4 @@
-"""Design system token expand (#19): vocabulary exists without changing UI."""
+"""Design system token expand (#19) and sidebar/topbar migration (#21)."""
 from __future__ import annotations
 
 import re
@@ -108,9 +108,36 @@ def test_base_html_uses_data_theme_dark_and_new_config(base_html):
     assert "'status-in-progress': 'var(--status-in-progress)'" in base_html
 
 
-def test_legacy_palette_classes_remain_in_templates(templates_text):
+def test_sidebar_topbar_no_legacy_palette_classes(base_html):
+    # AC #21: sidebar e topbar não usam mais zinc/violet/hex arbitrário.
+    for token in ("zinc-", "violet-", "neutral-", "#0b0b0f", "#0e0e13", "#111116"):
+        assert token not in base_html, f"{token} found in base.html"
+
+
+def test_pins_sidebar_uses_design_system():
+    pins = (TEMPLATES / "pins" / "_sidebar.html").read_text()
     for token in ("zinc-", "violet-", "neutral-"):
-        assert token in templates_text, f"{token} palette dropped from templates"
+        assert token not in pins, f"{token} found in pins/_sidebar.html"
+    assert 'data-lucide="pin"' in pins
+
+
+def test_sidebar_topbar_uses_lucide_and_no_visible_logout():
+    # Ícones de navegação via Lucide; nenhum "Sair" visível na sidebar.
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES)),
+        autoescape=select_autoescape(["html"]),
+    )
+    html = env.get_template("base.html").render(
+        workspace={"slug": "ws", "id": "ws-1"},
+        user={"name": "Dev", "email": "dev@example.com"},
+    )
+    assert "data-lucide" in html
+    assert 'data-lucide="inbox"' in html
+    assert 'data-lucide="bot"' in html
+    assert 'data-lucide="user"' in html
+    assert ">Sair<" not in html
 
 
 def test_semantic_bg_surface_card_resolves_to_token_value(app_css, base_html):
