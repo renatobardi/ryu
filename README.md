@@ -27,7 +27,7 @@
 ```
 
 - **API**: FastAPI, routers por domínio (`/api/auth`, `/api/issues`, `/api/agents`, `/api/tasks`, `/api/chat`, `/api/skills`, `/api/autopilots`, `/api/inbox`).
-- **UI**: Jinja2 + HTMX + Tailwind (CDN), dark theme, páginas em `/w/{slug}/...`.
+- **UI**: Jinja2 + HTMX + Tailwind (CDN), dark theme, páginas em `/w/{slug}/...`. Um design system (tema claro/escuro, accent ciano, ícones Lucide) está especificado em `docs/tailwind-config-mapping.md` e ainda em implantação.
 - **Realtime**: hub in-memory por workspace (`issue:*`, `task:*`, `chat:*`, `inbox:new`, ...).
 - **Runner**: fila de tasks em tabela; adapters invocam as CLIs `claude` e `codex` dentro de workspaces por issue em `/data/workspaces`.
 - **Banco**: SQLite (default, arquivo em `/data/ryu.db`) ou Postgres via `RYU_DATABASE_URL`.
