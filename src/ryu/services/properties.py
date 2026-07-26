@@ -8,7 +8,6 @@ Modelo em duas partes:
 from __future__ import annotations
 
 import json
-import urllib.parse
 import uuid
 from datetime import datetime
 from typing import Any
@@ -25,7 +24,6 @@ MAX_ACTIVE_PROPERTIES = 20
 MAX_PROPERTIES_BAG_BYTES = 16 * 1024
 MAX_TEXT_LEN = 4000
 MAX_URL_LEN = 2048
-URL_SCHEMES = ("http", "https")
 POSITION_STEP = 1024.0
 
 
@@ -210,8 +208,7 @@ def _validate_value(prop: IssueProperty, value: Any) -> Any:
             raise IssueError("valor de propriedade checkbox deve ser boolean")
         return value
     if t == "url":
-        scheme = urllib.parse.urlsplit(value).scheme.lower() if isinstance(value, str) else ""
-        if scheme not in URL_SCHEMES:
+        if not isinstance(value, str) or not value.lower().startswith(("http://", "https://")):
             raise IssueError("valor de propriedade url deve começar com http:// ou https://")
         if len(value) > MAX_URL_LEN:
             raise IssueError(f"url excede {MAX_URL_LEN} caracteres")

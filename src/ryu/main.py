@@ -18,7 +18,6 @@ from fastapi.staticfiles import StaticFiles
 
 from ryu.config import settings
 from ryu.db import engine, init_db
-from ryu.middleware import install_middlewares
 from ryu.realtime.hub import hub
 from ryu.runner import start_runner, stop_runner
 from ryu.services import metrics as metrics_svc
@@ -86,8 +85,54 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 
-# ── Middlewares (CSRF + métricas HTTP) ────────────────────────────────
-install_middlewares(app)
+# ── CSRF (workspace-auth ciclo 1; paridade multica middleware/auth.go) ─
+# Quando a auth vem de COOKIE (não Bearer), métodos mutantes em /api/*
+# exigem header X-CSRF-Token válido (HMAC vinculado ao JWT do cookie).
+_CSRF_EXEMPT = (
+    "/api/auth/request-code",
+    "/api/auth/verify",
+    "/api/auth/google",
+    "/api/auth/logout",
+    "/api/webhooks/",
+)
+
+
+@app.middleware("http")
+async def csrf_middleware(request, call_next):
+    from fastapi.responses import JSONResponse
+
+    from ryu.services.auth import AUTH_COOKIE, validate_csrf_token
+
+    if (
+        request.method in ("POST", "PUT", "PATCH", "DELETE")
+        and request.url.path.startswith("/api/")
+        and not request.url.path.startswith(_CSRF_EXEMPT)
+        and not request.headers.get("Authorization", "").lower().startswith("bearer ")
+        and request.cookies.get(AUTH_COOKIE)
+    ):
+        header = request.headers.get("X-CSRF-Token", "")
+        if not validate_csrf_token(header, request.cookies[AUTH_COOKIE]):
+            return JSONResponse(status_code=403, content={"detail": "invalid CSRF token"})
+    return await call_next(request)
+
+
+# ── Métricas HTTP (usage-observability ciclo 1) ────────────────────────
+@app.middleware("http")
+async def metrics_middleware(request, call_next):
+    if not settings.metrics_enabled or request.url.path == "/metrics":
+        return await call_next(request)
+    metrics_svc.http_in_flight_inc()
+    started = time.perf_counter()
+    try:
+        response = await call_next(request)
+    finally:
+        metrics_svc.http_in_flight_dec()
+    duration = time.perf_counter() - started
+    route = request.scope.get("route")
+    route_path = getattr(route, "path", None) or request.url.path
+    with __import__("contextlib").suppress(Exception):
+        metrics_svc.observe_http(request.method, route_path, response.status_code, duration)
+    return response
 
 # ── Static ────────────────────────────────────────────────────────────
 app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
@@ -112,10 +157,10 @@ app.include_router(inbox_api.router, prefix="/api/inbox", tags=["inbox"])
 app.include_router(inbox_api.usage_router, prefix="/api/usage", tags=["usage"])
 app.include_router(projects_api.router, prefix="/api/projects", tags=["projects"])
 app.include_router(runtime_profiles_api.router, prefix="/api/runtime-profiles", tags=["runtime-profiles"])
-app.include_router(workspace_extra_api.router, prefix="/api/search", tags=["search"])
+app.include_router(workspace_extra_api.search_router, prefix="/api/search", tags=["search"])
 app.include_router(properties_api.router, prefix="/api/properties", tags=["properties"])
 app.include_router(pins_api.router, prefix="/api/pins", tags=["pins"])
-app.include_router(attachments_api.router, prefix="/api", tags=["attachments"])
+app.include_router(attachments_api.upload_router, prefix="/api", tags=["attachments"])
 app.include_router(attachments_api.uploads_router, tags=["attachments"])  # /uploads/*
 # daemon-cli ciclo 1: API de daemon externo + runtimes + handoff do CLI
 app.include_router(daemon_api.router, prefix="/api/daemon", tags=["daemon"])

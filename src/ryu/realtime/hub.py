@@ -7,14 +7,8 @@ from collections import defaultdict
 
 from fastapi import WebSocket
 
-# Taxonomia de eventos (atualizar ao publicar um evento novo):
-# - issue:created|updated|deleted|reaction, comment:created|updated|reaction
-# - task:queued|running|progress|completed|failed|cancelled, agent:status
-# - chat:message|done|cancel_finalized|session_read|session_updated|session_deleted
-# - inbox:new|unarchived, autopilot:run_done, squad:evaluated
-# - workspace:updated|deleted, member:added|updated|removed, invitation:created|accepted|
-#   declined|revoked, project:created|updated|deleted
-# - runtime:registered|models_done|update_done, github_pr:updated, vcs_pr:updated
+# Eventos: issue:created|updated|deleted, comment:created, task:queued|running|progress|
+# completed|failed|cancelled, chat:message|done, inbox:new, agent:status, autopilot:run_done
 
 
 class Hub:

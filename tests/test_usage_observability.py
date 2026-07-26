@@ -146,6 +146,67 @@ async def test_dashboard_usage_and_runtime_endpoints(client):
     assert any(c["agent_id"] == agent["id"] for c in counts)
 
 
+# ── Presença de agentes: snapshot + working-agents ───────────────────────
+async def test_agent_task_snapshot_and_working_agents(client):
+    data = await login(client, "usage-obs-presence@example.com")
+    ws_id = data["workspaces"][0]["id"]
+    agent = await _mk_agent(client, ws_id, "Presence")
+    issue, task = await _mk_issue_with_task(client, ws_id, agent["id"], "presence")
+
+    # task recém criada fica 'queued' -> aparece no snapshot (metade ativa),
+    # mas não em working-agents (que exige status 'running').
+    r = await client.get("/api/dashboard/agent-task-snapshot", params={"workspace_id": ws_id})
+    assert r.status_code == 200
+    snapshot = r.json()
+    assert any(t["id"] == task["id"] for t in snapshot)
+
+    r = await client.get("/api/dashboard/working-agents", params={"workspace_id": ws_id, "type": "issue"})
+    assert r.status_code == 200
+    assert r.json() == []
+
+    # marca a task como 'running' -> agora aparece no chip working-agents
+    from ryu.db import SessionLocal
+    from ryu.models import AgentTask
+
+    async with SessionLocal() as db:
+        t = await db.get(AgentTask, task["id"])
+        t.status = "running"
+        await db.commit()
+
+    r = await client.get("/api/dashboard/working-agents", params={"workspace_id": ws_id, "type": "issue"})
+    assert r.status_code == 200
+    working = r.json()
+    assert len(working) == 1
+    assert working[0]["id"] == agent["id"]
+    assert working[0]["running_task_count"] == 1
+    assert working[0]["issue_ids"] == [issue["id"]]
+
+    r = await client.get("/api/dashboard/working-agents", params={"workspace_id": ws_id, "type": "chat"})
+    assert r.status_code == 200
+    assert r.json() == []
+
+    r = await client.get("/api/dashboard/working-agents", params={"workspace_id": ws_id, "type": "bogus"})
+    assert r.status_code == 422
+
+    # marca como 'completed' -> some do working-agents, mas fica no snapshot
+    # como o outcome terminal mais recente do agente.
+    async with SessionLocal() as db:
+        t = await db.get(AgentTask, task["id"])
+        t.status = "completed"
+        from ryu.models import now
+        t.finished_at = now()
+        await db.commit()
+
+    r = await client.get("/api/dashboard/working-agents", params={"workspace_id": ws_id})
+    assert r.status_code == 200
+    assert r.json() == []
+
+    r = await client.get("/api/dashboard/agent-task-snapshot", params={"workspace_id": ws_id})
+    assert r.status_code == 200
+    snapshot = r.json()
+    assert any(t["id"] == task["id"] and t["status"] == "completed" for t in snapshot)
+
+
 # ── /metrics ──────────────────────────────────────────────────────────
 async def test_metrics_endpoint_exposes_prometheus_text(client):
     data = await login(client, "usage-obs-metrics@example.com")

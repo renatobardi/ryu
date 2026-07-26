@@ -11,6 +11,8 @@ Endpoints (paridade multica router.go:1299-1313, 1363/1366):
 - GET /runtimes/{id}/usage, /runtimes/{id}/usage/by-agent — usage por runtime
 - GET /agent-activity-30d — atividade diária por agente (30 dias)
 - GET /agent-run-counts   — contagem de runs por agente
+- GET /agent-task-snapshot — snapshot de tasks p/ derivar presença por agente
+- GET /working-agents      — agentes com task 'running' agora (chip + filtro)
 
 Todos aceitam ?workspace_id, ?project_id (quando fizer sentido) e ?tz
 (nome IANA; default UTC) — o corte de "dia" é feito no timezone do viewer.
@@ -20,12 +22,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ryu.api.agents import task_to_dict
 from ryu.db import get_db
 from ryu.models import Agent, AgentTask, Issue, TaskUsage, User
+from ryu.services import agents as agents_svc
 from ryu.services.auth import current_user
 from ryu.services.pricing import effective_cost_usd
 
@@ -386,3 +390,123 @@ async def agent_run_counts(
             for aid, c in sorted(counts.items(), key=lambda kv: -kv[1]["total"])
         ],
     }
+
+
+# ── Presença de agentes: snapshot + working-agents — gap important #agent-presence ──
+@router.get("/agent-task-snapshot")
+async def agent_task_snapshot(
+    workspace_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Snapshot workspace-wide para derivar presença por agente (paridade
+    multica ListWorkspaceAgentTaskSnapshot): toda task ativa
+    (queued/dispatched/running) + a última task TERMINAL (completed/failed)
+    de cada agente. `cancelled` é excluído do lado do outcome de propósito —
+    é sinal procedural ("tentativa abortada"), não um resultado, e não pode
+    mascarar uma falha anterior. O front-end decide "ativa vence, senão o
+    último outcome"; um outcome de falha fica sticky até uma nova tentativa
+    (ativa) ou um sucesso."""
+    active = list(
+        (
+            await db.execute(
+                select(AgentTask).where(
+                    AgentTask.workspace_id == workspace_id,
+                    AgentTask.status.in_(agents_svc.ACTIVE_TASK_STATUSES),
+                )
+            )
+        ).scalars()
+    )
+    terminal_rows = list(
+        (
+            await db.execute(
+                select(AgentTask)
+                .where(AgentTask.workspace_id == workspace_id, AgentTask.status.in_(("completed", "failed")))
+                .order_by(AgentTask.agent_id, AgentTask.finished_at.desc())
+            )
+        ).scalars()
+    )
+    latest_terminal: dict[str, AgentTask] = {}
+    for t in terminal_rows:
+        latest_terminal.setdefault(t.agent_id, t)
+
+    return [task_to_dict(t) for t in active + list(latest_terminal.values())]
+
+
+@router.get("/working-agents")
+async def working_agents(
+    workspace_id: str,
+    type: str | None = None,  # noqa: A002 — mesmo nome de query param do multica
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    """Agentes com pelo menos uma task 'running' agora — backing do chip
+    "agents working" e do filtro por assignee-id na tela de issues (paridade
+    multica ListWorkspaceWorkingAgents). `type` filtra a origem do trabalho:
+    issue (task ligada a uma issue), chat (task de sessão de chat), ou vazio
+    (todas as origens). Ryu não tem uma coluna dedicada de autopilot_run_id
+    (schema mais simples que o multica); uma task 'running' sem issue_id e
+    sem chat_session_id é o work_dir "quick"/autopilot — mapeada para
+    type=autopilot como melhor esforço.
+
+    scope=mine / relation (My Issues) do multica não têm equivalente em Ryu
+    ainda (não existe o conceito de relação "minhas issues") — fora de escopo
+    deste fix; type=issue/autopilot/chat sempre reflete o workspace inteiro.
+    """
+    if type not in (None, "", "issue", "autopilot", "chat"):
+        raise HTTPException(422, "type inválido: deve ser issue, autopilot ou chat")
+
+    rows = list(
+        (
+            await db.execute(
+                select(AgentTask).where(
+                    AgentTask.workspace_id == workspace_id, AgentTask.status == "running"
+                )
+            )
+        ).scalars()
+    )
+
+    def _matches(t: AgentTask) -> bool:
+        if not type:
+            return True
+        if type == "chat":
+            return t.chat_session_id is not None
+        if type == "issue":
+            return t.chat_session_id is None and t.issue_id is not None
+        if type == "autopilot":
+            return t.chat_session_id is None and t.issue_id is None
+        return True
+
+    by_agent: dict[str, dict] = {}
+    for t in rows:
+        if not _matches(t):
+            continue
+        b = by_agent.setdefault(t.agent_id, {"running_task_count": 0, "issue_ids": set()})
+        b["running_task_count"] += 1
+        if t.issue_id:
+            b["issue_ids"].add(t.issue_id)
+
+    if not by_agent:
+        return []
+
+    agents = list(
+        (
+            await db.execute(
+                select(Agent).where(
+                    Agent.workspace_id == workspace_id,
+                    Agent.id.in_(list(by_agent.keys())),
+                    Agent.archived_at.is_(None),
+                )
+            )
+        ).scalars()
+    )
+    return [
+        {
+            "id": a.id,
+            "name": a.name,
+            "avatar_url": None,
+            "running_task_count": by_agent[a.id]["running_task_count"],
+            "issue_ids": sorted(by_agent[a.id]["issue_ids"]),
+        }
+        for a in agents
+    ]

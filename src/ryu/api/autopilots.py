@@ -24,7 +24,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ryu.db import get_db
 from ryu.models import Agent, User, Workspace
 from ryu.services import automation as svc
-from ryu.services import webhooks as webhooks_svc
 from ryu.services.auth import current_user
 
 router = APIRouter()
@@ -144,7 +143,7 @@ async def list_autopilots(workspace_id: str, db: AsyncSession = Depends(get_db),
 @router.post("/hook/{webhook_token}")
 async def webhook_trigger(webhook_token: str, request: Request, db: AsyncSession = Depends(get_db)):
     body = await request.body()
-    status_code, resp = await webhooks_svc.webhook_ingress(
+    status_code, resp = await svc.webhook_ingress(
         db, webhook_token, body=body, headers=dict(request.headers)
     )
     return JSONResponse(resp, status_code=status_code)
@@ -335,8 +334,8 @@ async def list_deliveries(
     except svc.AutomationError as e:
         raise _http(e)
     return [
-        webhooks_svc.delivery_to_dict(d)
-        for d in await webhooks_svc.list_deliveries(db, autopilot_id, limit=min(max(limit, 1), 200), status=status)
+        svc.delivery_to_dict(d)
+        for d in await svc.list_deliveries(db, autopilot_id, limit=min(max(limit, 1), 200), status=status)
     ]
 
 
@@ -346,10 +345,10 @@ async def get_delivery(
 ):
     try:
         await svc.get_autopilot(db, autopilot_id)
-        d = await webhooks_svc.get_delivery(db, autopilot_id, delivery_id)
+        d = await svc.get_delivery(db, autopilot_id, delivery_id)
     except svc.AutomationError as e:
         raise _http(e)
-    return webhooks_svc.delivery_to_dict(d, include_body=True)
+    return svc.delivery_to_dict(d, include_body=True)
 
 
 @router.post("/{autopilot_id}/deliveries/{delivery_id}/replay")
@@ -358,10 +357,10 @@ async def replay_delivery(
 ):
     try:
         ap = await _load_writable(db, autopilot_id, user)
-        replay, run = await webhooks_svc.replay_delivery(db, ap, delivery_id)
+        replay, run = await svc.replay_delivery(db, ap, delivery_id)
     except svc.AutomationError as e:
         raise _http(e)
-    out = webhooks_svc.delivery_to_dict(replay)
+    out = svc.delivery_to_dict(replay)
     out["run"] = svc.run_to_dict(run) if run is not None else None
     return out
 

@@ -20,10 +20,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ryu.db import get_db
-from ryu.models import Agent, RuntimeProfile, User
+from ryu.models import Agent, Member, RuntimeProfile, User
 from ryu.runner.adapters import PROTOCOL_FAMILIES
 from ryu.services.auth import current_user
-from ryu.services.workspaces import get_member, require_access
 
 router = APIRouter()
 
@@ -63,8 +62,20 @@ class ProfileUpdate(BaseModel):
 
 
 async def _member_role(db: AsyncSession, user: User, workspace_id: str) -> str | None:
-    member = await get_member(db, workspace_id, user.id)
-    return member.role if member else None
+    if user.id.startswith("agent:"):
+        return None
+    res = await db.execute(
+        select(Member).where(Member.workspace_id == workspace_id, Member.user_id == user.id)
+    )
+    m = res.scalars().first()
+    return m.role if m else None
+
+
+async def _require_member(db: AsyncSession, user: User, workspace_id: str) -> str:
+    role = await _member_role(db, user, workspace_id)
+    if role is None and not user.id.startswith("agent:"):
+        raise HTTPException(403, "sem acesso a este workspace")
+    return role or "agent"
 
 
 async def _require_admin(db: AsyncSession, user: User, workspace_id: str) -> None:
@@ -116,7 +127,7 @@ async def create_profile(payload: ProfileCreate, db: AsyncSession = Depends(get_
 
 @router.get("")
 async def list_profiles(workspace_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
-    await require_access(db, workspace_id, user)
+    await _require_member(db, user, workspace_id)
     res = await db.execute(
         select(RuntimeProfile).where(RuntimeProfile.workspace_id == workspace_id).order_by(RuntimeProfile.display_name)
     )
@@ -130,7 +141,7 @@ async def list_profiles(workspace_id: str, db: AsyncSession = Depends(get_db), u
 @router.get("/{profile_id}")
 async def get_profile(profile_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     p = await _get_profile(db, profile_id)
-    await require_access(db, p.workspace_id, user)
+    await _require_member(db, user, p.workspace_id)
     if p.visibility == "private" and p.created_by != user.id and not await _can_mutate(db, user, p):
         raise HTTPException(403, "profile privado")
     return profile_to_dict(p)

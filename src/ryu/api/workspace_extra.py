@@ -1,6 +1,6 @@
 """Extras de workspace: Search, My Issues, Runtimes e Settings.
 
-- `router`: JSON, montar em main.py com prefix="/api/search".
+- `search_router`: JSON, montar em main.py com prefix="/api/search".
 - `pages_router`: páginas HTML (/w/{slug}/my-issues, /search, /runtimes, /settings), SEM prefixo.
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ from ryu.models import Agent, ChatSession, Issue, Member, User
 from ryu.realtime.hub import hub
 from ryu.services.auth import current_user, current_workspace
 
-router = APIRouter()
+search_router = APIRouter()
 pages_router = APIRouter()
 
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
@@ -78,7 +78,7 @@ async def _search(db: AsyncSession, workspace_id: str, q: str, limit: int = 20) 
     return {"issues": issues, "agents": agents, "chats": chats}
 
 
-@router.get("")
+@search_router.get("")
 async def api_search(
     workspace_id: str,
     q: str = "",
