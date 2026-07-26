@@ -1,0 +1,37 @@
+{#
+  Tradução de docs/Ryu Design System/components/data/StatusDot.jsx.
+
+  Bolinha de 8px que identifica o status de uma issue. Sempre acompanhada
+  do rótulo em texto — a cor sozinha nunca carrega o significado
+  (StatusDot.prompt.md). O rótulo é um sibling ao lado da bolinha:
+
+  - Sem `{% call %}`: o rótulo padrão é o valor cru do backend,
+    minúsculo (ex.: "in_progress"), renderizado ao lado do dot. É o
+    rótulo ARIA + visível.
+  - Com `{% call %}`: o conteúdo do caller sobrepõe o rótulo padrão
+    quando o valor cru não é apresentável (ex.: coluna do board mostra
+    "In Progress"). Nesse caso a bolinha é decorativa (aria-hidden) — o
+    label visível sibling já carrega o significado.
+
+  Os enums do backend vêm com underscore (in_progress) e os tokens são
+  hifenizados (--status-in-progress). Montar o nome da classe colando o
+  valor cru do backend depois do prefixo de token geraria classe
+  inexistente e falharia em silêncio — por isso a cor sai sempre de um
+  mapa explícito (docs/tailwind-config-mapping.md §4).
+#}
+{% macro status_dot(status='backlog') %}
+  {% set colors = {
+    'backlog':     'bg-status-backlog',
+    'todo':        'bg-status-todo',
+    'in_progress': 'bg-status-in-progress',
+    'in_review':   'bg-status-in-review',
+    'done':        'bg-status-done',
+    'blocked':     'bg-status-blocked',
+    'cancelled':   'bg-status-cancelled',
+  } %}
+  {% set color = colors.get(status, 'bg-status-backlog') %}
+  <span class="inline-flex items-center gap-1.5">
+    <span class="inline-block rounded-full {{ color }} shrink-0 w-2 h-2"
+          {% if caller is defined %}aria-hidden="true"{% else %}aria-label="{{ status }}"{% endif %}></span>{{ caller() if caller is defined else status }}
+  </span>
+{% endmacro %}
