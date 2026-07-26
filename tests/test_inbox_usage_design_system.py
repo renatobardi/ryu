@@ -126,7 +126,7 @@ def test_inbox_severity_uses_status_pill_macro(env):
     assert "Action Required" in html
     assert "Attention" in html
     assert "Info" in html
-    # Severidade vem do macro, não de classes interpoladas.
+    # Severity comes from the macro, not from interpolated classes.
     assert "bg-red-500" not in html
     assert "bg-amber-400" not in html
 
