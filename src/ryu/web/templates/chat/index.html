@@ -29,7 +29,7 @@
           {% endfor %}
         </select>
         <button type="submit" title="Fixar agente na barra rápida"
-                class="px-2 py-1 rounded text-xs text-text-subtle hover:text-amber-400 border border-border-default">
+                class="px-2 py-1 rounded text-xs text-text-subtle hover:text-chat-bubble-system-fg border border-border-default">
           &#9733; fixar
         </button>
       </form>
@@ -65,7 +65,7 @@
       <a href="/w/{{ workspace.slug }}/chat/{{ s.id }}"
          class="group flex items-center gap-2 px-3 py-2 mx-1 rounded-md text-sm
                 {% if active_session and active_session.id == s.id %}bg-surface-active text-text-primary{% else %}text-text-muted hover:bg-surface-sunken hover:text-text-body{% endif %}">
-        {% if s.pinned %}<span title="Fixada" class="text-amber-400 text-xs">&#9733;</span>{% endif %}
+        {% if s.pinned %}<span title="Fixada" class="text-chat-bubble-system-fg text-xs">&#9733;</span>{% endif %}
         <span class="truncate {{ 'font-semibold text-text-primary' if s.unread_since else '' }}">{{ s.title }}</span>
         {% if s.unread_since %}
         <span title="Não lida" class="ml-auto shrink-0 w-2 h-2 rounded-full bg-accent"></span>
@@ -92,7 +92,7 @@
               hx-vals='{"pinned": {{ "false" if active_session.pinned else "true" }}}'
               hx-ext="json-enc" hx-swap="none"
               hx-on::after-request="window.location.reload()"
-              class="px-2 py-1 rounded text-sm {{ 'text-amber-400' if active_session.pinned else 'text-text-subtle hover:text-text-body' }}">
+              class="px-2 py-1 rounded text-sm {{ 'text-chat-bubble-system-fg' if active_session.pinned else 'text-text-subtle hover:text-text-body' }}">
         &#9733;
       </button>
       <button title="{{ 'Desarquivar' if active_session.archived else 'Arquivar' }}"
