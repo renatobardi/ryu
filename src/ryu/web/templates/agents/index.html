@@ -10,23 +10,23 @@
   <form method="post" action="/w/{{ workspace.slug }}/agents"
         class="flex flex-wrap gap-2 items-end bg-surface-card border border-border-default rounded-lg p-4">
     <div class="flex flex-col gap-1">
-      <label class="text-xs text-text-muted">Nome</label>
-      <input name="name" required placeholder="Codebot"
+      <label for="agent-name" class="text-xs text-text-muted">Nome</label>
+      <input id="agent-name" name="name" required placeholder="Codebot"
              class="bg-surface-input border border-border-strong rounded px-2 py-1.5 text-sm text-text-primary">
     </div>
     <div class="flex flex-col gap-1">
-      <label class="text-xs text-text-muted">Handle</label>
-      <input name="handle" placeholder="@codebot"
+      <label for="agent-handle" class="text-xs text-text-muted">Handle</label>
+      <input id="agent-handle" name="handle" placeholder="@codebot"
              class="bg-surface-input border border-border-strong rounded px-2 py-1.5 text-sm text-text-primary">
     </div>
     <div class="flex flex-col gap-1 grow">
-      <label class="text-xs text-text-muted">Descrição</label>
-      <input name="description" placeholder="O que este agente faz"
+      <label for="agent-description" class="text-xs text-text-muted">Descrição</label>
+      <input id="agent-description" name="description" placeholder="O que este agente faz"
              class="w-full bg-surface-input border border-border-strong rounded px-2 py-1.5 text-sm text-text-primary">
     </div>
     <div class="flex flex-col gap-1">
-      <label class="text-xs text-text-muted">Runtime</label>
-      <select name="runtime" class="bg-surface-input border border-border-strong rounded px-2 py-1.5 text-sm text-text-primary">
+      <label for="agent-runtime" class="text-xs text-text-muted">Runtime</label>
+      <select id="agent-runtime" name="runtime" class="bg-surface-input border border-border-strong rounded px-2 py-1.5 text-sm text-text-primary">
         <option value="claude">claude</option>
         <option value="codex">codex</option>
         <option value="gemini">gemini</option>

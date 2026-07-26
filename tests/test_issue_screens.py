@@ -225,6 +225,11 @@ def test_detail_page_uses_semantic_vocabulary(env):
 def test_detail_page_uses_lucide_for_assignee(env):
     html = _render(env, "issues/detail.html", _detail_ctx())
     assert 'data-lucide="bot"' in html
+    # member assignee branch renders the user icon
+    member_ctx = _detail_ctx()
+    member_ctx["issue"] = {**member_ctx["issue"], "assignee_type": "member", "assignee_id": "u1"}
+    member_html = _render(env, "issues/detail.html", member_ctx)
+    assert 'data-lucide="user"' in member_html
 
 
 # ── Comments ────────────────────────────────────────────────────────────────

@@ -10,14 +10,17 @@
     <form id="new-issue" hx-post="/w/{{ workspace.slug }}/board/issues"
           hx-target="#board-columns" hx-swap="outerHTML"
           class="flex items-center gap-2">
+      <label for="new-issue-title" class="sr-only">Title</label>
       <input name="title" id="new-issue-title" required placeholder="Nova issue..."
              class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm text-text-primary placeholder:text-text-faint focus:outline-none focus:border-border-focus w-64">
-      <select name="status" class="bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
+      <label for="new-issue-status" class="sr-only">Status</label>
+      <select name="status" id="new-issue-status" class="bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
         {% for st in column_order %}
         <option value="{{ st }}">{{ status_titles[st] }}</option>
         {% endfor %}
       </select>
-      <select name="assignee_agent_id" class="bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
+      <label for="new-issue-assignee" class="sr-only">Assignee</label>
+      <select name="assignee_agent_id" id="new-issue-assignee" class="bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
         <option value="">Sem agente</option>
         {% for a in agents %}
         <option value="{{ a.id }}">@{{ a.handle }}</option>

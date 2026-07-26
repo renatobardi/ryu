@@ -70,8 +70,8 @@
 
   <aside class="space-y-4">
     <div>
-      <label class="text-11 uppercase tracking-wide text-text-muted block mb-1">Status</label>
-      <select hx-patch="/api/issues/{{ issue.id }}"
+      <label for="issue-status" class="text-11 uppercase tracking-wide text-text-muted block mb-1">Status</label>
+      <select id="issue-status" hx-patch="/api/issues/{{ issue.id }}"
               hx-vals='js:{"status": event.target.value}' hx-ext="json-enc" hx-swap="none"
               name="status"
               class="w-full bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
@@ -81,8 +81,8 @@
       </select>
     </div>
     <div>
-      <label class="text-11 uppercase tracking-wide text-text-muted block mb-1">Prioridade</label>
-      <select hx-patch="/api/issues/{{ issue.id }}"
+      <label for="issue-priority" class="text-11 uppercase tracking-wide text-text-muted block mb-1">Prioridade</label>
+      <select id="issue-priority" hx-patch="/api/issues/{{ issue.id }}"
               hx-vals='js:{"priority": event.target.value}' hx-ext="json-enc" hx-swap="none"
               name="priority"
               class="w-full bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
@@ -92,8 +92,8 @@
       </select>
     </div>
     <div>
-      <label class="text-11 uppercase tracking-wide text-text-muted block mb-1">Agente</label>
-      <select hx-patch="/api/issues/{{ issue.id }}"
+      <label for="issue-assignee" class="text-11 uppercase tracking-wide text-text-muted block mb-1">Agente</label>
+      <select id="issue-assignee" hx-patch="/api/issues/{{ issue.id }}"
               hx-vals='js:{"assignee_type": event.target.value ? "agent" : null, "assignee_id": event.target.value || null}'
               hx-ext="json-enc" hx-swap="none"
               class="w-full bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
