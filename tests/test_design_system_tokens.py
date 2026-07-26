@@ -1,6 +1,7 @@
 """Design system token expand (#19) and sidebar/topbar migration (#21)."""
 from __future__ import annotations
 
+import datetime
 import re
 from pathlib import Path
 
@@ -71,32 +72,17 @@ def test_app_css_has_light_and_dark_custom_properties(app_css):
         assert f"{token}:" in app_css, f"missing {token}"
 
 
-def test_app_css_preserves_existing_ryu_classes(app_css):
-    expected = [
-        ".ryu-status-backlog",
-        ".ryu-status-todo",
-        ".ryu-status-in_progress",
-        ".ryu-status-in_review",
-        ".ryu-status-done",
-        ".ryu-status-blocked",
-        ".ryu-status-cancelled",
-        ".ryu-agent-idle",
-        ".ryu-agent-working",
-        ".ryu-agent-blocked",
-        ".ryu-agent-error",
-        ".ryu-agent-offline",
-        ".ryu-task-queued",
-        ".ryu-task-dispatched",
-        ".ryu-task-running",
-        ".ryu-task-completed",
-        ".ryu-task-failed",
-        ".ryu-task-cancelled",
-        ".ryu-sev-action_required",
-        ".ryu-sev-attention",
-        ".ryu-sev-info",
+def test_app_css_has_no_legacy_ryu_classes(app_css):
+    # Após migrar os 5 call sites de dashboard.html/agents/index.html,
+    # as classes .ryu-* tornaram-se código morto e foram removidas do app.css.
+    legacy = [
+        ".ryu-status-",
+        ".ryu-agent-",
+        ".ryu-task-",
+        ".ryu-sev-",
     ]
-    missing = [c for c in expected if c not in app_css]
-    assert not missing, f"missing .ryu-* classes: {missing}"
+    found = [c for c in legacy if c in app_css]
+    assert not found, f"legacy .ryu-* classes still in app.css: {found}"
 
 
 def test_base_html_uses_data_theme_dark_and_new_config(base_html):
@@ -148,3 +134,98 @@ def test_semantic_bg_surface_card_resolves_to_token_value(app_css, base_html):
     assert "'surface-card': 'var(--surface-card)'" in base_html
     # Under dark theme the variable resolves to #212121.
     assert _resolve(dark, root, "--surface-card") == "#212121"
+
+
+def _render(template_name: str, ctx: dict) -> str:
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES)),
+        autoescape=select_autoescape(["html"]),
+    )
+    return env.get_template(template_name).render(**ctx)
+
+
+_STATUS_TITLES = {
+    "backlog": "Backlog",
+    "todo": "Todo",
+    "in_progress": "In Progress",
+    "in_review": "In Review",
+    "done": "Done",
+    "blocked": "Blocked",
+    "cancelled": "Cancelled",
+}
+
+
+_NOW = datetime.datetime.now()
+
+
+_COMMON_CTX = {
+    "workspace": {"slug": "ws", "id": "ws-1", "name": "Workspace"},
+    "user": {"name": "Dev", "email": "dev@example.com"},
+}
+
+
+def _agents_ctx():
+    agents = [
+        {"id": "a1", "name": "Coder", "handle": "coder", "runtime": "claude", "description": "code agent", "status": "working"},
+        {"id": "a2", "name": "Reviewer", "handle": "reviewer", "runtime": "codex", "status": "idle"},
+    ]
+    return {
+        **_COMMON_CTX,
+        "active_nav": "agents",
+        "agents": agents,
+        "tasks": [
+            {"agent_id": "a1", "kind": "sync", "status": "running", "created_at": _NOW},
+            {"agent_id": "a2", "kind": "lint", "status": "completed", "created_at": _NOW},
+        ],
+        "agent_names": {"a1": "Coder", "a2": "Reviewer"},
+    }
+
+
+def _dashboard_ctx():
+    agents = [
+        {"id": "a1", "name": "Coder", "handle": "coder", "runtime": "claude", "status": "working"},
+    ]
+    return {
+        **_COMMON_CTX,
+        "active_nav": "dashboard",
+        "status_order": list(_STATUS_TITLES.keys()),
+        "status_titles": _STATUS_TITLES,
+        "issue_counts": {k: 0 for k in _STATUS_TITLES},
+        "agents": agents,
+        "agent_names": {"a1": "Coder"},
+        "recent_tasks": [
+            {"agent_id": "a1", "kind": "sync", "status": "running", "result_summary": None, "prompt": "run", "created_at": _NOW}
+        ],
+    }
+
+
+def test_dashboard_uses_semantic_vocabulary():
+    html = _render("dashboard.html", _dashboard_ctx())
+    for token in ("zinc-", "violet-", "ryu-status-", "ryu-agent-", "ryu-task-", "#111116"):
+        assert token not in html, f"{token} found in dashboard.html"
+    # Status macros produzem classes semânticas com mapa explícito.
+    assert "bg-status-in-progress" in html
+    assert "bg-agent-working-bg text-agent-working-fg" in html
+    assert "bg-task-running-bg text-task-running-fg" in html
+    # Sem interpolação de cor de estado.
+    assert "bg-amber-500/15" not in html
+    assert "bg-red-500/15" not in html
+    assert "bg-emerald-500/15" not in html
+    assert "bg-zinc-700/40" not in html
+
+
+def test_agents_index_uses_semantic_vocabulary():
+    html = _render("agents/index.html", _agents_ctx())
+    for token in ("zinc-", "violet-", "ryu-status-", "ryu-agent-", "ryu-task-", "#111116"):
+        assert token not in html, f"{token} found in agents/index.html"
+    assert "bg-agent-working-bg text-agent-working-fg" in html
+    assert "bg-agent-idle-bg text-agent-idle-fg" in html
+    assert "bg-task-running-bg text-task-running-fg" in html
+    assert "bg-task-completed-bg text-task-completed-fg" in html
+    # Sem interpolação de cor de estado.
+    assert "bg-amber-500/15" not in html
+    assert "bg-red-500/15" not in html
+    assert "bg-emerald-500/15" not in html
+    assert "bg-zinc-700/40" not in html

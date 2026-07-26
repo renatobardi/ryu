@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% from "_components/data/status_dot.html" import status_dot %}
+{% from "_components/data/status_pill.html" import status_pill %}
 {% block title %}{{ workspace.name }} — Dashboard{% endblock %}
 {% block content %}
 <div class="p-6 space-y-8"
@@ -9,26 +11,25 @@
 
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-semibold text-zinc-100">{{ workspace.name }}</h1>
-        <p class="text-sm text-zinc-500">Visão geral do workspace</p>
+        <h1 class="text-xl font-semibold text-text-primary">{{ workspace.name }}</h1>
+        <p class="text-sm text-text-faint">Visão geral do workspace</p>
       </div>
       <a href="/w/{{ workspace.slug }}/board"
-         class="bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-md px-4 py-2">
+         class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm font-medium rounded-md px-4 py-2">
         Ir para o Board
       </a>
     </div>
 
     <!-- ── Issues por status ─────────────────────────────────── -->
     <section>
-      <h2 class="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-3">Issues</h2>
+      <h2 class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">Issues</h2>
       <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {% for st in status_order %}
         <a href="/w/{{ workspace.slug }}/board"
-           class="bg-[#111116] border border-zinc-800 rounded-lg p-4 hover:border-zinc-700">
-          <div class="text-2xl font-semibold text-zinc-100">{{ issue_counts.get(st, 0) }}</div>
-          <div class="text-xs mt-1 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full ryu-status-{{ st }}"></span>
-            <span class="text-zinc-400">{{ status_titles[st] }}</span>
+           class="bg-surface-card border border-border-default rounded-lg p-4 hover:border-border-hover">
+          <div class="text-2xl font-semibold text-text-primary">{{ issue_counts.get(st, 0) }}</div>
+          <div class="mt-1 text-xs text-text-muted">
+            {% call status_dot(st) %}{{ status_titles[st] }}{% endcall %}
           </div>
         </a>
         {% endfor %}
@@ -38,38 +39,38 @@
     <!-- ── Agents ────────────────────────────────────────────── -->
     <section>
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-medium text-zinc-400 uppercase tracking-wider">Agents</h2>
-        <a href="/w/{{ workspace.slug }}/agents" class="text-xs text-violet-400 hover:text-violet-300">ver todos</a>
+        <h2 class="text-sm font-medium text-text-muted uppercase tracking-wider">Agents</h2>
+        <a href="/w/{{ workspace.slug }}/agents" class="text-xs text-text-accent hover:text-accent-hover">ver todos</a>
       </div>
       {% if agents %}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {% for a in agents %}
-        <div class="bg-[#111116] border border-zinc-800 rounded-lg p-4 flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center text-sm">🤖</div>
+        <div class="bg-surface-card border border-border-default rounded-lg p-4 flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-surface-hover flex items-center justify-center text-sm text-text-muted">🤖</div>
           <div class="min-w-0 flex-1">
-            <div class="text-sm font-medium text-zinc-100 truncate">{{ a.name }}</div>
-            <div class="text-xs text-zinc-500 truncate">@{{ a.handle }} · {{ a.runtime }}</div>
+            <div class="text-sm font-medium text-text-primary truncate">{{ a.name }}</div>
+            <div class="text-xs text-text-subtle truncate">@{{ a.handle }} · {{ a.runtime }}</div>
           </div>
-          <span class="text-[10px] font-medium rounded-full px-2 py-0.5 ryu-agent-{{ a.status }}">{{ a.status }}</span>
+          {{ status_pill(kind='agent', status=a.status) }}
         </div>
         {% endfor %}
       </div>
       {% else %}
-      <div class="bg-[#111116] border border-dashed border-zinc-800 rounded-lg p-6 text-sm text-zinc-500 text-center">
+      <div class="bg-surface-card border border-dashed border-border-default rounded-lg p-6 text-sm text-text-faint text-center">
         Nenhum agente ainda. Crie o primeiro em
-        <a href="/w/{{ workspace.slug }}/agents" class="text-violet-400 hover:text-violet-300">Agents</a>.
+        <a href="/w/{{ workspace.slug }}/agents" class="text-text-accent hover:text-accent-hover">Agents</a>.
       </div>
       {% endif %}
     </section>
 
     <!-- ── Tasks recentes ────────────────────────────────────── -->
     <section>
-      <h2 class="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-3">Tasks recentes</h2>
+      <h2 class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">Tasks recentes</h2>
       {% if recent_tasks %}
-      <div class="bg-[#111116] border border-zinc-800 rounded-lg overflow-hidden">
+      <div class="bg-surface-card border border-border-default rounded-lg overflow-hidden">
         <table class="w-full text-sm">
           <thead>
-            <tr class="text-left text-xs text-zinc-500 border-b border-zinc-800">
+            <tr class="text-left text-xs text-text-faint border-b border-border-default">
               <th class="px-4 py-2 font-medium">Agente</th>
               <th class="px-4 py-2 font-medium">Tipo</th>
               <th class="px-4 py-2 font-medium">Status</th>
@@ -79,16 +80,16 @@
           </thead>
           <tbody>
             {% for t in recent_tasks %}
-            <tr class="border-b border-zinc-800/50 last:border-0 hover:bg-zinc-900/40">
-              <td class="px-4 py-2 text-zinc-300">{{ agent_names.get(t.agent_id, '—') }}</td>
-              <td class="px-4 py-2 text-zinc-500">{{ t.kind }}</td>
+            <tr class="border-b border-border-hairline last:border-0 hover:bg-surface-hover">
+              <td class="px-4 py-2 text-text-secondary">{{ agent_names.get(t.agent_id, '—') }}</td>
+              <td class="px-4 py-2 text-text-faint">{{ t.kind }}</td>
               <td class="px-4 py-2">
-                <span class="text-[10px] font-medium rounded-full px-2 py-0.5 ryu-task-{{ t.status }}">{{ t.status }}</span>
+                {{ status_pill(kind='task', status=t.status) }}
               </td>
-              <td class="px-4 py-2 text-zinc-400 truncate max-w-[280px]">
+              <td class="px-4 py-2 text-text-muted truncate max-w-[280px]">
                 {{ t.result_summary or t.prompt or '—' }}
               </td>
-              <td class="px-4 py-2 text-right text-zinc-500 text-xs whitespace-nowrap">
+              <td class="px-4 py-2 text-right text-text-faint text-xs whitespace-nowrap">
                 {{ t.created_at.strftime('%d/%m %H:%M') if t.created_at else '—' }}
               </td>
             </tr>
@@ -97,7 +98,7 @@
         </table>
       </div>
       {% else %}
-      <div class="bg-[#111116] border border-dashed border-zinc-800 rounded-lg p-6 text-sm text-zinc-500 text-center">
+      <div class="bg-surface-card border border-dashed border-border-default rounded-lg p-6 text-sm text-text-faint text-center">
         Nenhuma task executada ainda.
       </div>
       {% endif %}
