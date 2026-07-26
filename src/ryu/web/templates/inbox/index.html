@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_components/data/count_badge.html" import count_badge %}
+{% from "_components/core/button.html" import button %}
 {% block title %}{{ workspace.name }} — Inbox{% endblock %}
 {% block content %}
 <div class="flex flex-col h-full">
@@ -25,10 +26,7 @@
         </select>
       </form>
       <form hx-post="/w/{{ workspace.slug }}/inbox/mark-all-read" hx-target="#inbox-items" hx-swap="outerHTML">
-        <button type="submit"
-                class="bg-surface-sunken hover:bg-surface-active text-text-body text-sm rounded-lg px-3 py-1.5 border border-transparent">
-          Marcar todas como lidas
-        </button>
+        {% call button(variant='secondary', type='submit') %}Marcar todas como lidas{% endcall %}
       </form>
     </div>
   </div>

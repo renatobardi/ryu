@@ -4,23 +4,25 @@
   Cores usam as classes Tailwind semânticas definidas em app.css
   (bg-accent, text-text-body, ...) — nunca hex nem escala crua.
 
-  Três variantes do JSX apontam pro vocabulário órfão (--zinc-800/700 em
-  `secondary`/`outline`, --violet-300 em `link`), que não existe em nenhum
-  tema; por decisão do mapa a fonte real é tokens/colors.css, então foram
-  remapeadas pro token semântico equivalente. `danger` usa red-400 nativo do
-  Tailwind: as semânticas cruas de colors.css são iguais nos dois temas e
-  batem valor a valor com a paleta do Tailwind (--red-400 == #f87171).
+  Três variantes do JSX apontavam para tokens que não existem em tema
+  nenhum — resíduo do vocabulário órfão que o mapa mandou ignorar (#12) —
+  e foram remapeadas para o token semântico equivalente. `danger` usa
+  `danger-fg`, calibrado por tema, e não a paleta crua do Tailwind.
+
+  `type` é parâmetro porque o produto é HTMX/formulário: a maioria dos
+  botões submete. Passá-lo por `attrs` não funcionaria — sairia um segundo
+  `type=` e o navegador usa o primeiro.
 
   `link` e `danger` são "bare": 12px, sem padding nem fundo (Button.prompt.md).
 #}
-{% macro button(variant='primary', size='md', disabled=False, full=False, attrs={}) %}
+{% macro button(variant='primary', size='md', type='button', disabled=False, full=False, attrs={}) %}
   {% set variants = {
     'primary':   'bg-accent hover:bg-accent-hover text-text-on-accent border border-transparent',
     'secondary': 'bg-surface-sunken hover:bg-surface-active text-text-body border border-transparent',
     'outline':   'bg-surface-input hover:bg-surface-hover text-text-secondary hover:text-text-body border border-border-strong',
     'ghost':     'bg-transparent hover:bg-surface-hover text-text-muted hover:text-text-body border border-transparent',
     'link':      'bg-transparent text-text-accent hover:text-accent-hover',
-    'danger':    'bg-transparent text-text-subtle hover:text-red-400',
+    'danger':    'bg-transparent text-text-subtle hover:text-danger-fg',
   } %}
   {% set sizes = {
     'sm': 'text-xs px-3 py-1',
@@ -29,7 +31,7 @@
   } %}
   {% set bare = variant in ('link', 'danger') %}
   <button
-    type="button"
+    type="{{ type }}"
     class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg font-medium transition-colors duration-120
            {{ variants.get(variant, variants['primary']) }}
            {{ 'text-xs' if bare else sizes.get(size, sizes['md']) }}
