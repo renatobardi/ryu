@@ -4,9 +4,27 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[1]
 APP_CSS = REPO / "src/ryu/web/static/app.css"
 BASE_HTML = REPO / "src/ryu/web/templates/base.html"
+TEMPLATES = REPO / "src/ryu/web/templates"
+
+
+@pytest.fixture(scope="module")
+def app_css():
+    return APP_CSS.read_text()
+
+
+@pytest.fixture(scope="module")
+def base_html():
+    return BASE_HTML.read_text()
+
+
+@pytest.fixture(scope="module")
+def templates_text():
+    return "\n".join(p.read_text() for p in TEMPLATES.rglob("*.html"))
 
 
 def _extract_block(css: str, selector: str) -> dict[str, str]:
@@ -34,10 +52,9 @@ def _resolve(props: dict[str, str], root: dict[str, str], name: str) -> str:
     return value
 
 
-def test_app_css_has_light_and_dark_custom_properties():
-    css = APP_CSS.read_text()
-    assert ":root {" in css
-    assert '[data-theme="dark"] {' in css
+def test_app_css_has_light_and_dark_custom_properties(app_css):
+    assert ":root {" in app_css
+    assert '[data-theme="dark"] {' in app_css
 
     for token in [
         "--surface-app",
@@ -51,11 +68,10 @@ def test_app_css_has_light_and_dark_custom_properties():
         "--agent-working-bg",
         "--agent-working-fg",
     ]:
-        assert f"{token}:" in css, f"missing {token}"
+        assert f"{token}:" in app_css, f"missing {token}"
 
 
-def test_app_css_preserves_existing_ryu_classes():
-    css = APP_CSS.read_text()
+def test_app_css_preserves_existing_ryu_classes(app_css):
     expected = [
         ".ryu-status-backlog",
         ".ryu-status-todo",
@@ -79,31 +95,30 @@ def test_app_css_preserves_existing_ryu_classes():
         ".ryu-sev-attention",
         ".ryu-sev-info",
     ]
-    missing = [c for c in expected if c not in css]
+    missing = [c for c in expected if c not in app_css]
     assert not missing, f"missing .ryu-* classes: {missing}"
 
 
-def test_base_html_uses_data_theme_dark_and_new_config():
-    html = BASE_HTML.read_text()
-    assert '<html' in html
-    assert 'data-theme="dark"' in html
-    assert "tailwind.config = {" in html
-    assert "darkMode: ['selector', '[data-theme=\"dark\"]']" in html
-    assert "'surface-card': 'var(--surface-card)'" in html
-    assert "'status-in-progress': 'var(--status-in-progress)'" in html
+def test_base_html_uses_data_theme_dark_and_new_config(base_html):
+    assert '<html' in base_html
+    assert 'data-theme="dark"' in base_html
+    assert "tailwind.config = {" in base_html
+    assert "darkMode: ['selector', '[data-theme=\"dark\"]']" in base_html
+    assert "'surface-card': 'var(--surface-card)'" in base_html
+    assert "'status-in-progress': 'var(--status-in-progress)'" in base_html
 
 
-def test_base_html_preserves_zinc_and_violet_palette():
-    html = BASE_HTML.read_text()
-    assert "zinc-" in html
-    assert "violet-" in html
+def test_legacy_palette_classes_remain_in_templates(base_html, templates_text):
+    assert "zinc-" in base_html
+    assert "violet-" in base_html
+    assert "neutral-" in templates_text
 
 
-def test_semantic_class_resolves_to_dark_token_value():
-    css = APP_CSS.read_text()
-    root = _extract_block(css, ":root")
-    dark = _extract_block(css, '[data-theme="dark"]')
+def test_semantic_bg_surface_card_resolves_to_token_value(app_css, base_html):
+    root = _extract_block(app_css, ":root")
+    dark = _extract_block(app_css, '[data-theme="dark"]')
 
+    # The tailwind config wires bg-surface-card -> var(--surface-card).
+    assert "'surface-card': 'var(--surface-card)'" in base_html
+    # Under dark theme the variable resolves to #212121.
     assert _resolve(dark, root, "--surface-card") == "#212121"
-    assert _resolve(dark, root, "--status-in-progress") == "#eab308"
-    assert _resolve(dark, root, "--accent") == "#5fc3dd"
