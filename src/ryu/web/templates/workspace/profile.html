@@ -18,8 +18,8 @@
         <span class="text-sm text-text-body">{{ user.email }}</span>
       </div>
       <div>
-        <label class="block text-xs text-text-subtle mb-1">Nome</label>
-        <input name="name" value="{{ user.name }}" required
+        <label for="profile-name" class="block text-xs text-text-subtle mb-1">Nome</label>
+        <input id="profile-name" name="name" value="{{ user.name }}" required
                class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm w-full focus:outline-none focus:border-border-focus">
       </div>
       <button class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm px-4 py-1.5 rounded-md">Salvar</button>

@@ -141,6 +141,13 @@ def test_profile_keeps_form_max_width(env):
     assert "max-w-2xl" in html
 
 
+def test_profile_name_input_is_associated_with_its_label(env):
+    """Sem `for`/`id` o leitor de tela não sabe que o rótulo é daquele campo."""
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert '<label for="profile-name"' in html
+    assert 'id="profile-name"' in html
+
+
 def test_profile_logout_button_calls_ryuLogout(env):
     """Sair migrou de Settings para Profile (#49): a ação é sobre o usuário."""
     html = render(env, "workspace/profile.html", _profile_ctx())
