@@ -2,35 +2,35 @@
 {% block title %}{{ workspace.name }} — Usage{% endblock %}
 {% block content %}
 <div class="flex flex-col h-full overflow-y-auto">
-  <div class="px-6 py-4 border-b border-zinc-800">
-    <h1 class="text-lg font-semibold text-zinc-100">Usage</h1>
-    <p class="text-xs text-zinc-500 mt-0.5">Últimos {{ summary.days }} dias — desde {{ summary.since[:10] }}</p>
+  <div class="px-6 py-4 border-b border-border-soft">
+    <h1 class="text-lg font-semibold text-text-primary">Usage</h1>
+    <p class="text-xs text-text-faint mt-0.5">Últimos {{ summary.days }} dias — desde {{ summary.since[:10] }}</p>
   </div>
 
   <div class="grid grid-cols-4 gap-4 px-6 py-6">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <p class="text-xs text-zinc-500">Tasks</p>
-      <p class="text-2xl font-semibold text-zinc-100">{{ summary.totals.tasks }}</p>
+    <div class="bg-surface-card border border-border-default rounded-lg p-4">
+      <p class="text-xs text-text-faint">Tasks</p>
+      <p class="text-2xl font-semibold text-text-primary">{{ summary.totals.tasks }}</p>
     </div>
-    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <p class="text-xs text-zinc-500">Input tokens</p>
-      <p class="text-2xl font-semibold text-zinc-100">{{ "{:,}".format(summary.totals.input_tokens) }}</p>
+    <div class="bg-surface-card border border-border-default rounded-lg p-4">
+      <p class="text-xs text-text-faint">Input tokens</p>
+      <p class="text-2xl font-semibold text-text-primary">{{ "{:,}".format(summary.totals.input_tokens) }}</p>
     </div>
-    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <p class="text-xs text-zinc-500">Output tokens</p>
-      <p class="text-2xl font-semibold text-zinc-100">{{ "{:,}".format(summary.totals.output_tokens) }}</p>
+    <div class="bg-surface-card border border-border-default rounded-lg p-4">
+      <p class="text-xs text-text-faint">Output tokens</p>
+      <p class="text-2xl font-semibold text-text-primary">{{ "{:,}".format(summary.totals.output_tokens) }}</p>
     </div>
-    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
-      <p class="text-xs text-zinc-500">Custo (USD)</p>
+    <div class="bg-surface-card border border-border-default rounded-lg p-4">
+      <p class="text-xs text-text-faint">Custo (USD)</p>
       <p class="text-2xl font-semibold text-emerald-400">${{ "%.4f"|format(summary.totals.cost_usd) }}</p>
     </div>
   </div>
 
   <div class="px-6 pb-6">
-    <h2 class="text-sm font-medium text-zinc-300 mb-2">Por agente</h2>
+    <h2 class="text-sm font-medium text-text-secondary mb-2">Por agente</h2>
     <table class="w-full text-sm">
       <thead>
-        <tr class="text-left text-xs text-zinc-500 border-b border-zinc-800">
+        <tr class="text-left text-xs text-text-faint border-b border-border-default">
           <th class="py-2 pr-4">Agente</th>
           <th class="py-2 pr-4">Tasks</th>
           <th class="py-2 pr-4">Input</th>
@@ -39,20 +39,20 @@
           <th class="py-2">Status</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-zinc-800/60">
+      <tbody class="divide-y divide-border-hairline">
         {% for row in summary.by_agent %}
-        <tr class="text-zinc-300">
+        <tr class="text-text-secondary">
           <td class="py-2 pr-4">{{ row.agent_name }}</td>
           <td class="py-2 pr-4">{{ row.tasks }}</td>
           <td class="py-2 pr-4">{{ "{:,}".format(row.input_tokens) }}</td>
           <td class="py-2 pr-4">{{ "{:,}".format(row.output_tokens) }}</td>
           <td class="py-2 pr-4">${{ "%.4f"|format(row.cost_usd) }}</td>
-          <td class="py-2 text-xs text-zinc-500">
+          <td class="py-2 text-xs text-text-faint">
             {% for st, n in row.by_status.items() %}{{ st }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="py-6 text-center text-zinc-500">Sem tasks no período.</td></tr>
+        <tr><td colspan="6" class="py-6 text-center text-text-faint">Sem tasks no período.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -60,23 +60,23 @@
 
   <div class="px-6 pb-6">
     <div class="flex items-center justify-between mb-2">
-      <h2 class="text-sm font-medium text-zinc-300">Tempo de execução (runtime) por agente</h2>
-      <a class="text-xs text-zinc-500 hover:text-zinc-300" href="/api/dashboard/agent-runtime?workspace_id={{ workspace.id }}&days=30" target="_blank">JSON</a>
+      <h2 class="text-sm font-medium text-text-secondary">Tempo de execução (runtime) por agente</h2>
+      <a class="text-xs text-text-faint hover:text-text-secondary" href="/api/dashboard/agent-runtime?workspace_id={{ workspace.id }}&days=30" target="_blank">JSON</a>
     </div>
     <table class="w-full text-sm" id="runtime-table" data-workspace="{{ workspace.id }}">
       <thead>
-        <tr class="text-left text-xs text-zinc-500 border-b border-zinc-800">
+        <tr class="text-left text-xs text-text-faint border-b border-border-default">
           <th class="py-2 pr-4">Agente</th>
           <th class="py-2 pr-4">Total (s)</th>
           <th class="py-2 pr-4">Tasks</th>
           <th class="py-2">Falhas</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-zinc-800/60">
-        <tr><td colspan="4" class="py-3 text-center text-zinc-500 text-xs">carregando…</td></tr>
+      <tbody class="divide-y divide-border-hairline">
+        <tr><td colspan="4" class="py-3 text-center text-text-faint text-xs">carregando…</td></tr>
       </tbody>
     </table>
-    <p class="text-xs text-zinc-600 mt-2">
+    <p class="text-xs text-text-subtle mt-2">
       Custo/tokens por provider+modelo, uso por hora do dia e usage por runtime:
       <a class="underline" href="/api/dashboard/usage/by-agent?workspace_id={{ workspace.id }}&days=30" target="_blank">by-agent</a> ·
       <a class="underline" href="/api/dashboard/usage/by-hour?workspace_id={{ workspace.id }}&days=30" target="_blank">by-hour</a> ·
@@ -94,11 +94,11 @@
           var tbody = table.querySelector("tbody");
           var rows = data.by_agent || [];
           if (!rows.length) {
-            tbody.innerHTML = '<tr><td colspan="4" class="py-3 text-center text-zinc-500 text-xs">Sem execuções terminadas no período.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="py-3 text-center text-text-faint text-xs">Sem execuções terminadas no período.</td></tr>';
             return;
           }
           tbody.innerHTML = rows.map(function (r) {
-            return "<tr class=\"text-zinc-300\"><td class=\"py-2 pr-4\">" + r.agent_name +
+            return "<tr class=\"text-text-secondary\"><td class=\"py-2 pr-4\">" + r.agent_name +
               "</td><td class=\"py-2 pr-4\">" + r.total_seconds +
               "</td><td class=\"py-2 pr-4\">" + r.task_count +
               "</td><td class=\"py-2\">" + r.failed_count + "</td></tr>";
@@ -109,10 +109,10 @@
   </script>
 
   <div class="px-6 pb-10">
-    <h2 class="text-sm font-medium text-zinc-300 mb-2">Por dia</h2>
+    <h2 class="text-sm font-medium text-text-secondary mb-2">Por dia</h2>
     <table class="w-full text-sm">
       <thead>
-        <tr class="text-left text-xs text-zinc-500 border-b border-zinc-800">
+        <tr class="text-left text-xs text-text-faint border-b border-border-default">
           <th class="py-2 pr-4">Dia</th>
           <th class="py-2 pr-4">Tasks</th>
           <th class="py-2 pr-4">Input</th>
@@ -121,20 +121,20 @@
           <th class="py-2">Status</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-zinc-800/60">
+      <tbody class="divide-y divide-border-hairline">
         {% for row in summary.by_day %}
-        <tr class="text-zinc-300">
+        <tr class="text-text-secondary">
           <td class="py-2 pr-4">{{ row.day }}</td>
           <td class="py-2 pr-4">{{ row.tasks }}</td>
           <td class="py-2 pr-4">{{ "{:,}".format(row.input_tokens) }}</td>
           <td class="py-2 pr-4">{{ "{:,}".format(row.output_tokens) }}</td>
           <td class="py-2 pr-4">${{ "%.4f"|format(row.cost_usd) }}</td>
-          <td class="py-2 text-xs text-zinc-500">
+          <td class="py-2 text-xs text-text-faint">
             {% for st, n in row.by_status.items() %}{{ st }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="py-6 text-center text-zinc-500">Sem tasks no período.</td></tr>
+        <tr><td colspan="6" class="py-6 text-center text-text-faint">Sem tasks no período.</td></tr>
         {% endfor %}
       </tbody>
     </table>
