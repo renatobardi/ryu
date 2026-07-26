@@ -71,6 +71,24 @@ def _log(msg: str) -> None:
     print(f"[{_now_iso()}] {msg}", flush=True)
 
 
+async def _run_capture(cmd: list[str], *, timeout: float) -> tuple[int, str, str]:
+    """Roda um binário sem bloquear o event loop; devolve (returncode, stdout, stderr)."""
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    try:
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        raise
+    return (
+        proc.returncode or 0,
+        (stdout or b"").decode(errors="replace"),
+        (stderr or b"").decode(errors="replace"),
+    )
+
+
 class Daemon:
     def __init__(self, profile: str | None = None) -> None:
         self.profile = profile
@@ -186,11 +204,11 @@ class Daemon:
         status, message, version = "failed", "", ""
         if binary and args is not None:
             try:
-                out = subprocess.run([binary, *args], capture_output=True, text=True, timeout=300)
-                status = "completed" if out.returncode == 0 else "failed"
-                message = (out.stdout or out.stderr or "")[-1000:]
-                ver = subprocess.run([binary, "--version"], capture_output=True, text=True, timeout=10)
-                version = (ver.stdout or "").strip().splitlines()[0][:80] if ver.stdout else ""
+                rc, out, err = await _run_capture([binary, *args], timeout=300)
+                status = "completed" if rc == 0 else "failed"
+                message = (out or err or "")[-1000:]
+                _, ver_out, _ = await _run_capture([binary, "--version"], timeout=10)
+                version = ver_out.strip().splitlines()[0][:80] if ver_out.strip() else ""
             except Exception as e:  # noqa: BLE001
                 message = str(e)
         else:
