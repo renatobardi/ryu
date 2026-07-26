@@ -1,11 +1,13 @@
 <div id="attachments" class="space-y-1">
   {% for a in attachments %}
-  <div class="flex items-center gap-2 text-sm bg-zinc-900/60 border border-zinc-800 rounded-md px-3 py-1.5">
-    <span class="text-xs">📎</span>
-    <a href="{{ a.download_url }}" class="text-zinc-200 hover:text-violet-300 truncate flex-1">{{ a.filename }}</a>
-    <span class="text-[10px] text-zinc-600">{{ (a.size_bytes / 1024) | round(1) }} KB</span>
+  <div class="flex items-center gap-2 text-sm bg-surface-sunken border border-border-default rounded-md px-3 py-1.5">
+    <span class="text-xs text-text-muted">
+      <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+    </span>
+    <a href="{{ a.download_url }}" class="text-text-secondary hover:text-text-accent truncate flex-1">{{ a.filename }}</a>
+    <span class="text-2xs text-text-faint">{{ (a.size_bytes / 1024) | round(1) }} KB</span>
   </div>
   {% else %}
-  <p class="text-sm text-zinc-600">Nenhum anexo.</p>
+  <p class="text-sm text-text-faint">Nenhum anexo.</p>
   {% endfor %}
 </div>
