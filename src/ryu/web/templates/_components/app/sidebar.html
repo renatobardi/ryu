@@ -19,6 +19,9 @@
   A marca segue o JSX (龍 + "Ryu" + tagline). O Sidebar.prompt.md descreve
   um quadrado índigo com "R" — texto mais antigo que o próprio componente;
   o JSX é a implementação vigente.
+
+  O id fixo do campo de busca (par com o <label> oculto, que existe pra
+  leitor de tela) assume uma sidebar por página — é o caso do chrome fixo.
 #}
 {% from "_components/core/button.html" import button %}
 
@@ -34,7 +37,8 @@
   </div>
 
   <div class="px-2 pt-3 flex flex-col gap-2">
-    <input type="search" placeholder="Search  &#8984;K"
+    <label for="sidebar-search" class="sr-only">Buscar no workspace</label>
+    <input type="search" id="sidebar-search" placeholder="Search  &#8984;K"
            class="w-full rounded-lg bg-surface-input border border-border-default text-text-body placeholder:text-text-faint text-xs px-3 py-1 focus:border-border-focus focus:outline-none"
            {% for k, v in search_attrs.items() %}{{ k }}="{{ v }}" {% endfor %}>
     {% call button(full=True, size='sm') %}<i data-lucide="plus" class="w-3.5 h-3.5"></i> New Issue{% endcall %}
