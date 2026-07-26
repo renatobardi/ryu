@@ -404,7 +404,7 @@ async def _execute_real(db, task: AgentTask, agent: Agent) -> ExecResult | None:
                         )
                         await wdb.commit()
             except asyncio.CancelledError:
-                pass
+                raise  # cancelamento não é engolido; quem cancela (finally) faz o suppress
 
         wd = asyncio.create_task(_watchdog())
         try:
