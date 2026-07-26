@@ -1,7 +1,152 @@
 /* Ryu — estilos globais complementares ao Tailwind (dark, estilo Linear) */
 
 :root {
+  color-scheme: light;
+
+  /* ── Neutros quentes — claro (padrão) ─────────────────────────── */
+  --gray-950: #0d0d0d; --gray-900: #1a1a1a; --gray-800: #2e2e2c; --gray-700: #454440; --gray-600: #5d5d5b;
+  --gray-500: #767673; --gray-400: #8e8e8a; --gray-300: #c7c7c2; --gray-200: #e5e5e3; --gray-150: #ececea;
+  --gray-100: #f4f4f2; --gray-50: #f9f9f8; --gray-0: #ffffff;
+
+  /* ── Ciano — único acento ──────────────────────────────────────── */
+  --indigo-700: #06718f; --indigo-600: #0891b2; --indigo-500: #22a8c9; --indigo-400: #5fc3dd; --indigo-100: #e0f4f8;
+
+  /* ── Semânticas cruas (mesmas nos dois temas) ─────────────────── */
+  --emerald-600: #059669; --emerald-500: #10b981; --emerald-400: #34d399;
+  --green-500: #16a34a; --green-400: #22c55e;
+  --red-600: #dc2626; --red-500: #ef4444; --red-400: #f87171;
+  --amber-500: #d97706; --amber-400: #f59e0b;
+  --yellow-500: #ca8a04; --yellow-400: #eab308;
+  --orange-500: #ea580c; --orange-400: #f97316;
+  --blue-500: #3b82f6; --blue-400: #60a5fa;
+
+  /* ── Superfícies / bordas / texto / acento ─────────────────────── */
+  --surface-app: var(--gray-0); --surface-chrome: var(--gray-50); --surface-card: var(--gray-0);
+  --surface-raised: var(--gray-50); --surface-sunken: var(--gray-100); --surface-input: var(--gray-0);
+  --surface-input-alt: var(--gray-50); --surface-column: var(--gray-50);
+  --surface-hover: var(--gray-100); --surface-active: var(--gray-150);
+  --border-default: var(--gray-200); --border-soft: var(--gray-200); --border-hairline: var(--gray-150);
+  --border-strong: var(--gray-300); --border-hover: var(--gray-400); --border-focus: var(--indigo-600);
+  --text-primary: var(--gray-950); --text-body: var(--gray-900); --text-secondary: var(--gray-700);
+  --text-muted: var(--gray-600); --text-subtle: var(--gray-500); --text-faint: var(--gray-400);
+  --text-accent: var(--indigo-600); --text-on-accent: #fff;
+  --accent: var(--indigo-600); --accent-hover: var(--indigo-700); --accent-selection: rgb(8 145 178 / .18);
+  --card-shadow: 0 1px 2px rgb(0 0 0 / .04);
+
+  /* ── Status / pills ─────────────────────────────────────────────── */
+  --status-backlog: var(--gray-400); --status-todo: var(--gray-600); --status-in-progress: var(--yellow-500);
+  --status-in-review: var(--indigo-600); --status-done: var(--green-500); --status-blocked: var(--red-500);
+  --status-cancelled: var(--gray-300);
+  --agent-idle-bg: var(--gray-150); --agent-idle-fg: var(--gray-600);
+  --agent-working-bg: rgb(217 119 6 / .12); --agent-working-fg: var(--amber-500);
+  --agent-blocked-bg: rgb(239 68 68 / .12); --agent-blocked-fg: var(--red-500);
+  --agent-error-bg: rgb(239 68 68 / .16); --agent-error-fg: var(--red-600);
+  --agent-offline-bg: var(--gray-150); --agent-offline-fg: var(--gray-500);
+  --task-queued-bg: var(--gray-150); --task-queued-fg: var(--gray-600);
+  --task-dispatched-bg: rgb(59 130 246 / .12); --task-dispatched-fg: var(--blue-500);
+  --task-running-bg: rgb(202 138 4 / .12); --task-running-fg: var(--yellow-500);
+  --task-completed-bg: rgb(22 163 74 / .12); --task-completed-fg: var(--green-500);
+  --task-failed-bg: rgb(239 68 68 / .12); --task-failed-fg: var(--red-500);
+  --task-cancelled-bg: var(--gray-150); --task-cancelled-fg: var(--gray-500);
+  --sev-action-required-bg: rgb(239 68 68 / .12); --sev-action-required-fg: var(--red-500);
+  --sev-attention-bg: rgb(202 138 4 / .12); --sev-attention-fg: var(--yellow-500);
+  --sev-info-bg: var(--gray-150); --sev-info-fg: var(--gray-600);
+  --prio-urgent-bg: rgb(239 68 68 / .1); --prio-urgent-fg: var(--red-500);
+  --prio-high-bg: rgb(234 88 12 / .1); --prio-high-fg: var(--orange-500);
+  --prio-medium-bg: rgb(202 138 4 / .1); --prio-medium-fg: var(--yellow-500);
+  --prio-low-bg: var(--gray-150); --prio-low-fg: var(--gray-500);
+  --state-on-bg: rgb(5 150 105 / .12); --state-on-fg: var(--emerald-600);
+  --state-off-bg: var(--gray-150); --state-off-fg: var(--gray-500);
+  --scrollbar-thumb: var(--gray-300); --scrollbar-thumb-hover: var(--gray-400);
+  --chat-bubble-agent-bg: var(--gray-100); --chat-bubble-agent-fg: var(--gray-900);
+  --chat-bubble-system-bg: rgb(217 119 6 / .1); --chat-bubble-system-fg: var(--amber-500);
+  --chat-list-bg: var(--gray-50); --chat-panel-bg: var(--gray-0);
+
+  /* ── Tipografia (docs/Ryu Design System/tokens/typography.css) ─── */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --text-2xs: 10px; --text-11: 11px; --tracking-code: .5em;
+  /* text-xs/sm/base/lg/xl/2xl (12/14/16/18/20/24px) já batem 1:1 com o Tailwind
+     padrão — use as classes nativas, sem custom property. Idem tracking-wide/
+     wider (.025em/.05em) e os pesos (400/500/600/700 = font-normal/medium/
+     semibold/bold nativos). */
+
+  /* ── Layout (docs/Ryu Design System/tokens/spacing.css) ─────────── */
+  --issue-sidebar-width: 260px;
+  /* sidebar-width(224px)=w-56, chat-list-width/board-column-width(288px)=w-72,
+     topbar-height(44px)=h-11, content-max(1024px)=max-w-5xl, form-max(672px)=
+     max-w-2xl — todos já nativos do Tailwind, sem custom property. Só
+     issue-sidebar-width (260px) não tem equivalente nativo. Escala 0-48
+     (grid 4px) inteira já é a escala padrão do Tailwind (p-, m-, gap-, space-). */
+
+  /* ── Raios (docs/Ryu Design System/tokens/radius.css) ───────────── */
+  /* radius-sm/md/lg/xl/full (6/8/12/16/9999px) = rounded-md/lg/xl/2xl/full
+     nativos do Tailwind — nomes diferentes, mesmo valor, sem custom property. */
+
+  /* ── Efeitos (docs/Ryu Design System/tokens/effects.css) ────────── */
+  --focus-ring: 0 0 0 1px var(--border-focus);
+  --overlay-scrim: rgb(0 0 0 / .4);
+  --divider: 1px solid var(--border-hairline);
+
+  /* ── Movimento (docs/Ryu Design System/tokens/motion.css) ───────── */
+  --duration-fast: 120ms; --opacity-loading: .6;
+  /* ease-out/ease-in já são os nativos do Tailwind (cubic-bezier
+     idêntico); duration-150 também é nativo — só duration-fast (120ms) não tem
+     classe padrão. */
+}
+
+[data-theme="dark"] {
   color-scheme: dark;
+
+  --gray-950: #f5f5f4; --gray-900: #ececea; --gray-800: #d4d4d1; --gray-700: #a8a8a4; --gray-600: #8e8e8a;
+  --gray-500: #767673; --gray-400: #5d5d5b; --gray-300: #454440; --gray-200: #333331; --gray-150: #2a2a28;
+  --gray-100: #212121; --gray-50: #171717; --gray-0: #131313;
+
+  --indigo-700: #7ddaf0; --indigo-600: #5fc3dd; --indigo-500: #22a8c9; --indigo-400: #0891b2; --indigo-100: rgb(95 195 221 / .18);
+
+  --surface-app: var(--gray-0); --surface-chrome: var(--gray-50); --surface-card: var(--gray-100);
+  --surface-raised: var(--gray-100); --surface-sunken: var(--gray-50); --surface-input: var(--gray-100);
+  --surface-input-alt: var(--gray-50); --surface-column: var(--gray-100);
+  --surface-hover: var(--gray-150); --surface-active: var(--gray-200);
+  --border-default: var(--gray-200); --border-soft: var(--gray-200); --border-hairline: var(--gray-150);
+  --border-strong: var(--gray-300); --border-hover: var(--gray-400); --border-focus: var(--indigo-600);
+  --text-primary: var(--gray-950); --text-body: var(--gray-900); --text-secondary: var(--gray-800);
+  --text-muted: var(--gray-700); --text-subtle: var(--gray-600); --text-faint: var(--gray-500);
+  --text-accent: var(--indigo-600); --text-on-accent: #0d0d0d;
+  --accent: var(--indigo-600); --accent-hover: var(--indigo-700); --accent-selection: rgb(95 195 221 / .28);
+  --card-shadow: none;
+
+  --status-backlog: var(--gray-500); --status-todo: var(--gray-700); --status-in-progress: #eab308;
+  --status-in-review: var(--indigo-600); --status-done: #22c55e; --status-blocked: #ef4444;
+  --status-cancelled: var(--gray-300);
+  --agent-idle-bg: var(--gray-150); --agent-idle-fg: var(--gray-700);
+  --agent-working-bg: rgb(245 158 11 / .16); --agent-working-fg: #fbbf24;
+  --agent-blocked-bg: rgb(239 68 68 / .18); --agent-blocked-fg: #f87171;
+  --agent-error-bg: rgb(239 68 68 / .22); --agent-error-fg: #fca5a5;
+  --agent-offline-bg: var(--gray-150); --agent-offline-fg: var(--gray-600);
+  --task-queued-bg: var(--gray-150); --task-queued-fg: var(--gray-700);
+  --task-dispatched-bg: rgb(59 130 246 / .16); --task-dispatched-fg: #93c5fd;
+  --task-running-bg: rgb(234 179 8 / .16); --task-running-fg: #facc15;
+  --task-completed-bg: rgb(34 197 94 / .16); --task-completed-fg: #4ade80;
+  --task-failed-bg: rgb(239 68 68 / .18); --task-failed-fg: #f87171;
+  --task-cancelled-bg: var(--gray-150); --task-cancelled-fg: var(--gray-600);
+  --sev-action-required-bg: rgb(239 68 68 / .16); --sev-action-required-fg: #f87171;
+  --sev-attention-bg: rgb(234 179 8 / .16); --sev-attention-fg: #facc15;
+  --sev-info-bg: var(--gray-150); --sev-info-fg: var(--gray-700);
+  --prio-urgent-bg: rgb(239 68 68 / .15); --prio-urgent-fg: #f87171;
+  --prio-high-bg: rgb(249 115 22 / .15); --prio-high-fg: #fb923c;
+  --prio-medium-bg: rgb(234 179 8 / .15); --prio-medium-fg: #facc15;
+  --prio-low-bg: var(--gray-150); --prio-low-fg: var(--gray-600);
+  --state-on-bg: rgb(5 150 105 / .2); --state-on-fg: #34d399;
+  --state-off-bg: var(--gray-150); --state-off-fg: var(--gray-600);
+  --scrollbar-thumb: var(--gray-300); --scrollbar-thumb-hover: var(--gray-400);
+  --chat-bubble-agent-bg: var(--gray-100); --chat-bubble-agent-fg: var(--gray-900);
+  --chat-bubble-system-bg: rgb(245 158 11 / .14); --chat-bubble-system-fg: #fbbf24;
+  --chat-list-bg: var(--gray-50); --chat-panel-bg: var(--gray-0);
+
+  --focus-ring: 0 0 0 1px var(--border-focus);
+  --overlay-scrim: rgb(11 11 15 / .8);
+  --divider: 1px solid var(--border-hairline);
 }
 
 /* Scrollbars discretas */
