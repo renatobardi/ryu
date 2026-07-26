@@ -107,7 +107,7 @@ Só tags no formato exato `vX.Y.Z` entram na conta. Uma `v1.0.0-rc1` ou `v0.4.7.
 Duas saídas quando você precisa de uma versão específica:
 
 - **Tag à mão** — crie e empurre uma tag `v*`. O workflow a usa como está, sem calcular nada. É assim que se muda um dos dois primeiros números (`v0.5.0`, `v1.0.0`); a partir dela o contador continua.
-- **Actions → Release → Run workflow** — publica a imagem com o nome que você digitar, a partir do branch ou tag que você escolher, **sem** criar tag no repositório.
+- **Actions → Release → Run workflow** — publica a imagem com o nome que você digitar, **sem** criar tag no repositório. O workflow recusa se você selecionar outro ref que não a `main`: como toda publicação também move a `:latest` — que é o que o `ryu-up.sh` puxa —, subir de um branch qualquer contaminaria quem está em produção.
 
 Nos dois casos o que se publica é uma imagem e (no fluxo automático) uma tag git. Nenhum dos caminhos cria uma *Release* do GitHub.
 

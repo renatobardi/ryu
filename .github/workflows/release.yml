@@ -40,13 +40,26 @@ jobs:
 
       - name: Determine image tag
         id: meta
+        # Os valores vindos do evento entram por env, nunca interpolados no
+        # corpo do script: um ref chamado `$(...)` seria executado pelo Bash.
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
           set -euo pipefail
           create_tag=false
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            tag="${{ github.event.inputs.tag }}"
-          elif [ "${{ github.ref_type }}" = "tag" ]; then
-            tag="${{ github.ref_name }}"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            # Publicar de outro ref envenenaria a :latest, que é o que o
+            # ryu-up.sh puxa. O nome da imagem é livre; a origem não.
+            if [ "$REF_NAME" != "main" ]; then
+              echo "Release manual só a partir da main (veio de '$REF_NAME')." >&2
+              exit 1
+            fi
+            tag="$INPUT_TAG"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            tag="$REF_NAME"
           else
             # Merge na main: sobe o último número da última versão publicada
             # (v0.4.7 -> v0.4.8). Os dois primeiros só mudam por tag manual.
@@ -65,7 +78,9 @@ jobs:
             minor="${numbers#*.}"
             minor="${minor%%.*}"
             patch="${numbers##*.}"
-            tag="v${major}.${minor}.$((patch + 1))"
+            # 10# força base decimal: um patch como "08" seria lido como octal
+            # inválido e abortaria a aritmética.
+            tag="v${major}.${minor}.$((10#$patch + 1))"
             create_tag=true
             echo "última versão: $latest -> nova: $tag"
           fi
