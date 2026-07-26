@@ -1,0 +1,37 @@
+/* Ryu — tipografia. O produto não carrega webfont: usa a stack padrão do Tailwind
+   (font-sans) + ui-monospace para chaves de issue, cron e código. Escala = Tailwind. */
+:root{
+--font-sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji";
+--font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+
+/* tamanhos — os 10px/11px arbitrários são pills e metadados */
+--text-2xs:10px;   /* pills, badges, labels uppercase */
+--text-11:11px;    /* chave de issue mono, timestamps */
+--text-xs:12px;    /* metadados, labels de form */
+--text-sm:14px;    /* corpo padrão da UI */
+--text-base:16px;
+--text-lg:18px;    /* h1 de página */
+--text-xl:20px;    /* h1 de seção maior / login */
+--text-2xl:24px;   /* números de métrica, título de issue */
+
+--leading-none:1;
+--leading-snug:1.375;
+--leading-normal:1.5;
+
+--weight-normal:400;
+--weight-medium:500;
+--weight-semibold:600;
+--weight-bold:700;
+
+--tracking-wide:.025em;
+--tracking-wider:.05em;    /* labels UPPERCASE */
+--tracking-code:.5em;      /* input do código de verificação */
+
+/* papéis */
+--type-page-title:var(--weight-semibold) var(--text-lg)/1.4 var(--font-sans);
+--type-section-label:var(--weight-medium) var(--text-xs)/1.4 var(--font-sans);
+--type-body:var(--weight-normal) var(--text-sm)/1.5 var(--font-sans);
+--type-meta:var(--weight-normal) var(--text-xs)/1.4 var(--font-sans);
+--type-pill:var(--weight-medium) var(--text-2xs)/1.4 var(--font-sans);
+--type-key:var(--weight-normal) var(--text-11)/1.4 var(--font-mono);
+}

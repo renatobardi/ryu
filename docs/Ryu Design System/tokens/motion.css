@@ -1,0 +1,12 @@
+/* Ryu — movimento. Só o essencial: fade de 120ms nos swaps do HTMX, opacidade 0.6
+   durante request e um pulse no indicador "agente digitando…". Sem bounce, sem spring. */
+:root{
+--duration-fast:120ms; /* @kind other */
+--duration-base:150ms; /* @kind other */
+--ease-out:cubic-bezier(0,0,.2,1); /* @kind other */
+--ease-in:cubic-bezier(.4,0,1,1); /* @kind other */
+--opacity-loading:.6; /* @kind other */
+--transition-swap:opacity var(--duration-fast) var(--ease-out);
+--animate-pulse:pulse 2s cubic-bezier(.4,0,.6,1) infinite; /* @kind other */
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}

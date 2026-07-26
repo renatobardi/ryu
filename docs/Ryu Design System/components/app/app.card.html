@@ -1,0 +1,39 @@
+<!-- @dsCard group="Components" viewport="700x420" name="App shell" subtitle="Sidebar, NavItem, TopBar, IssueCard, BoardColumn, ChatBubble, InboxItem, StatCard, AgentCard" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box}body{margin:0;background:var(--surface-app);color:var(--text-body);font-family:var(--font-sans);padding:16px}a{color:var(--text-accent);text-decoration:none}a:hover{color:var(--accent-hover)}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.col{display:flex;flex-direction:column;gap:8px}.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint)}</style>
+</head><body><div id="root"></div><script type="text/babel">const N=window.RyuDesignSystem_7ed69e;
+const {Sidebar,SidebarSection,NavItem,TopBar,IssueCard,BoardColumn,ChatBubble,InboxItem,StatCard,AgentCard,Button,Icon}=N;
+function Demo(){return (<div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
+  <Sidebar user={{nickname:'renatob'}} style={{height:388,borderRadius:8,border:'1px solid var(--border-soft)'}}>
+    <NavItem icon={<Icon name="inbox" size={15}/>} label="Inbox" count={3}/>
+    <NavItem icon={<Icon name="message-circle" size={15}/>} label="Chat"/>
+    <SidebarSection>Workspace</SidebarSection>
+    <NavItem icon={<Icon name="layout-grid" size={15}/>} label="Issues" active/>
+    <NavItem icon={<Icon name="bot" size={15}/>} label="Agents"/>
+  </Sidebar>
+  <div className="col" style={{flex:1,gap:12,minWidth:0}}>
+    <TopBar connection="connected" inboxCount={3} style={{borderRadius:8,border:'1px solid var(--border-soft)'}}/>
+    <div className="row" style={{gap:12,alignItems:'flex-start'}}>
+      <BoardColumn title="In Progress" count={2} style={{width:230}}>
+        <IssueCard issueKey="RYU-142" title="Corrigir bug no runner" priority="urgent" assignee="codebot"/>
+        <IssueCard issueKey="RYU-140" title="Migrar para Postgres" priority="high"/>
+      </BoardColumn>
+      <div className="col" style={{flex:1,gap:8,minWidth:0}}>
+        <StatCard value={12} label="In Progress" status="in_progress" hoverable/>
+        <AgentCard compact name="Codebot" handle="codebot" runtime="claude" status="working"/>
+        <ChatBubble role="agent" time="14:02">Rodando pytest…</ChatBubble>
+        <ChatBubble role="user" time="14:03">beleza</ChatBubble>
+      </div>
+    </div>
+    <div style={{border:'1px solid var(--border-default)',borderRadius:8,overflow:'hidden'}}>
+      <InboxItem severity="action_required" title="codebot pediu aprovação" body="Alterar schema do banco" time="24/07 09:12">
+        <Button variant="ghost" size="sm">Lida</Button></InboxItem>
+    </div>
+  </div>
+</div>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);</script></body></html>

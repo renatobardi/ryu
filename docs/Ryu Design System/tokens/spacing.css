@@ -1,0 +1,21 @@
+/* Ryu — espaçamento. Grid 4px do Tailwind; a UI é densa (py-1.5 / px-3 dominam). */
+:root{
+--space-0:0px;--space-0-5:2px;--space-1:4px;--space-1-5:6px;--space-2:8px;--space-2-5:10px;
+--space-3:12px;--space-3-5:14px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;
+
+/* medidas fixas de layout, direto do base.html */
+--sidebar-width:224px;      /* w-56 */
+--chat-list-width:288px;    /* w-72 */
+--topbar-height:44px;       /* h-11 */
+--board-column-width:288px; /* w-72 */
+--issue-sidebar-width:260px;
+--content-max:1024px;       /* max-w-5xl (issue detail, agents) */
+--form-max:672px;           /* max-w-2xl (settings) */
+--page-padding:var(--space-6);
+
+/* paddings de controle — v2: um pouco mais respirados (altura de controle ~36px) */
+--control-pad-y:8px;--control-pad-x:14px;
+--control-pad-y-sm:6px;--control-pad-x-sm:12px;
+--card-pad:20px;
+--pill-pad-y:2px;--pill-pad-x:8px;
+}
