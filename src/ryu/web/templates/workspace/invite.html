@@ -2,22 +2,22 @@
 {% block title %}Convite — Ryu{% endblock %}
 {% block content %}
 <div class="min-h-full flex items-center justify-center p-8">
-  <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 max-w-md w-full text-center space-y-4">
-    <div class="w-10 h-10 mx-auto rounded-lg bg-violet-600 flex items-center justify-center text-white font-bold">R</div>
+  <div class="bg-surface-card border border-border-default rounded-xl p-8 max-w-md w-full text-center space-y-4">
+    <div class="w-10 h-10 mx-auto rounded-lg bg-accent flex items-center justify-center text-text-on-accent font-bold">R</div>
     {% if invitation.status != 'pending' %}
-      <h1 class="text-lg font-semibold text-zinc-100">Convite {{ invitation.status }}</h1>
-      <p class="text-sm text-zinc-400">Este convite não está mais pendente.</p>
+      <h1 class="text-lg font-semibold text-text-primary">Convite {{ invitation.status }}</h1>
+      <p class="text-sm text-text-muted">Este convite não está mais pendente.</p>
     {% elif expired %}
-      <h1 class="text-lg font-semibold text-zinc-100">Convite expirado</h1>
-      <p class="text-sm text-zinc-400">Peça um novo convite ao administrador do workspace.</p>
+      <h1 class="text-lg font-semibold text-text-primary">Convite expirado</h1>
+      <p class="text-sm text-text-muted">Peça um novo convite ao administrador do workspace.</p>
     {% else %}
-      <h1 class="text-lg font-semibold text-zinc-100">
+      <h1 class="text-lg font-semibold text-text-primary">
         Você foi convidado para {{ invite_workspace.name if invite_workspace else 'um workspace' }}
       </h1>
-      <p class="text-sm text-zinc-400">Papel: <span class="font-mono">{{ invitation.role }}</span></p>
+      <p class="text-sm text-text-muted">Papel: <span class="font-mono">{{ invitation.role }}</span></p>
       <div class="flex gap-3 justify-center pt-2">
-        <button onclick="acceptInvite()" class="bg-violet-600 hover:bg-violet-500 text-white text-sm px-5 py-2 rounded-md">Aceitar</button>
-        <button onclick="declineInvite()" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm px-5 py-2 rounded-md">Recusar</button>
+        <button onclick="acceptInvite()" class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm px-5 py-2 rounded-md">Aceitar</button>
+        <button onclick="declineInvite()" class="bg-surface-sunken hover:bg-surface-active text-text-body text-sm px-5 py-2 rounded-md">Recusar</button>
       </div>
       <p id="invite-err" class="text-xs text-red-400"></p>
     {% endif %}

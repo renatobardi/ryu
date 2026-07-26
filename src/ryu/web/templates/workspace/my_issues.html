@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% block title %}My Issues — {{ workspace.name }}{% endblock %}
 {% block content %}
-<div class="px-6 py-4 border-b border-zinc-800">
-  <h1 class="text-lg font-semibold text-zinc-100">My Issues</h1>
-  <p class="text-xs text-zinc-500 mt-0.5">{{ total }} issue(s) atribuída(s) a você</p>
+<div class="px-6 py-4 border-b border-border-soft">
+  <h1 class="text-lg font-semibold text-text-primary">My Issues</h1>
+  <p class="text-xs text-text-subtle mt-0.5">{{ total }} issue(s) atribuída(s) a você</p>
 </div>
 <div class="px-6 py-4 space-y-6">
   {% for st in status_order %}
   {% set items = grouped.get(st, []) %}
   {% if items %}
   <div>
-    <h2 class="text-xs uppercase tracking-wider text-zinc-500 mb-2">{{ status_titles.get(st, st) }} ({{ items|length }})</h2>
-    <div class="divide-y divide-zinc-800/60 border border-zinc-800 rounded-lg bg-zinc-900">
+    <h2 class="text-xs uppercase tracking-wider text-text-muted mb-2">{{ status_titles.get(st, st) }} ({{ items|length }})</h2>
+    <div class="divide-y divide-border-hairline border border-border-default rounded-lg bg-surface-card">
       {% for i in items %}
-      <a href="/w/{{ workspace.slug }}/issues/{{ i.key }}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-800/40">
-        <span class="text-xs text-zinc-500 w-20 shrink-0">{{ i.key }}</span>
-        <span class="text-sm text-zinc-200 flex-1 truncate">{{ i.title }}</span>
-        <span class="text-[10px] text-zinc-400 bg-zinc-800 rounded px-1.5 py-0.5">{{ i.priority }}</span>
+      <a href="/w/{{ workspace.slug }}/issues/{{ i.key }}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-hover">
+        <span class="text-xs text-text-subtle w-20 shrink-0">{{ i.key }}</span>
+        <span class="text-sm text-text-body flex-1 truncate">{{ i.title }}</span>
+        <span class="text-2xs text-text-muted bg-surface-active rounded px-1.5 py-0.5">{{ i.priority }}</span>
       </a>
       {% endfor %}
     </div>
@@ -24,7 +24,7 @@
   {% endif %}
   {% endfor %}
   {% if total == 0 %}
-  <p class="text-sm text-zinc-500">Nenhuma issue atribuída a você neste workspace.</p>
+  <p class="text-sm text-text-subtle">Nenhuma issue atribuída a você neste workspace.</p>
   {% endif %}
 </div>
 {% endblock %}
