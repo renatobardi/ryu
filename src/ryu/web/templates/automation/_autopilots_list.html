@@ -1,3 +1,4 @@
+{% from "_components/core/button.html" import button %}
 {% from "_components/data/status_pill.html" import status_pill %}
 <div id="autopilots-list" class="space-y-3">
   {% for ap in autopilots %}
@@ -26,7 +27,7 @@
           <button class="text-text-muted hover:text-text-secondary text-xs">{{ 'pausar' if ap.enabled else 'ativar' }}</button>
         </form>
         <form hx-post="/w/{{ workspace.slug }}/autopilots/{{ ap.id }}/delete" hx-target="#autopilots-list" hx-swap="outerHTML">
-          <button class="text-text-subtle hover:text-red-400 text-xs">excluir</button>
+          {% call button(variant='danger', type='submit') %}excluir{% endcall %}
         </form>
       </div>
     </div>

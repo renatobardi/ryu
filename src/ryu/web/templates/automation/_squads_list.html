@@ -1,3 +1,4 @@
+{% from "_components/core/button.html" import button %}
 <div id="squads-list" class="space-y-3">
   {% for s in squads %}
   <div class="bg-surface-card border border-border-default rounded-lg p-4">
@@ -8,7 +9,7 @@
         {% if s.description %}<div class="text-xs text-text-muted mt-1">{{ s.description }}</div>{% endif %}
       </div>
       <form hx-post="/w/{{ workspace.slug }}/squads/{{ s.id }}/delete" hx-target="#squads-list" hx-swap="outerHTML">
-        <button class="text-text-subtle hover:text-red-400 text-xs">excluir</button>
+        {% call button(variant='danger', type='submit') %}excluir{% endcall %}
       </form>
     </div>
 
@@ -17,7 +18,7 @@
       <span class="bg-surface-active text-text-secondary text-xs rounded-full px-2 py-0.5"
             title="{{ m.role or ('líder' if m.member_id == s.leader_agent_id else 'worker') }}">
         {% if m.member_type == 'agent' %}{{ agent_names.get(m.member_id, m.member_id) }}{% else %}humano:{{ m.member_id[:8] }}{% endif %}
-        {% if m.member_id == s.leader_agent_id %}<span class="text-amber-400">&#9733;</span>
+        {% if m.member_id == s.leader_agent_id %}<span class="text-warning-fg">&#9733;</span>
         {% elif m.role %}<span class="text-text-subtle">· {{ m.role }}</span>{% endif %}
       </span>
       {% endfor %}
@@ -44,7 +45,7 @@
         <textarea name="instructions" rows="3" placeholder="Instruções operacionais (injetadas em todo briefing do líder)"
                   aria-label="Instruções operacionais da squad"
                   class="w-full bg-surface-input border border-border-strong rounded px-2 py-1 text-xs text-text-primary">{{ s.instructions }}</textarea>
-        <button class="text-xs bg-surface-active hover:bg-surface-hover text-text-secondary px-3 py-1 rounded">Salvar briefing</button>
+        {% call button(variant='secondary', size='sm', type='submit') %}Salvar briefing{% endcall %}
       </form>
     </details>
 
@@ -54,9 +55,7 @@
       <select name="issue_id" class="bg-surface-input border border-border-strong rounded text-xs text-text-secondary px-2 py-1 max-w-xs">
         {% for i in issues %}<option value="{{ i.id }}">{{ i.key }} — {{ i.title[:60] }}</option>{% endfor %}
       </select>
-      <button class="bg-surface-active hover:bg-surface-hover text-text-secondary text-xs px-3 py-1 rounded">
-        Atribuir issue à squad
-      </button>
+      {% call button(variant='secondary', size='sm', type='submit') %}Atribuir issue à squad{% endcall %}
     </form>
     {% endif %}
   </div>

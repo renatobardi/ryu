@@ -1,3 +1,4 @@
+{% from "_components/core/button.html" import button %}
 <div id="skills-list" class="space-y-3">
   {% for s in skills %}
   <div class="bg-surface-card border border-border-default rounded-lg p-4">
@@ -7,7 +8,7 @@
         {% if s.description %}<div class="text-text-muted text-sm">{{ s.description }}</div>{% endif %}
       </div>
       <form hx-post="/w/{{ workspace.slug }}/skills/{{ s.id }}/delete" hx-target="#skills-list" hx-swap="outerHTML">
-        <button class="text-text-subtle hover:text-red-400 text-xs">excluir</button>
+        {% call button(variant='danger', type='submit') %}excluir{% endcall %}
       </form>
     </div>
     {% if s.content %}
@@ -18,7 +19,7 @@
       <span class="inline-flex items-center gap-1 bg-surface-active text-text-secondary text-xs rounded-full px-2 py-0.5">
         {{ a.name }}
         <form hx-post="/w/{{ workspace.slug }}/skills/{{ s.id }}/detach/{{ a.id }}" hx-target="#skills-list" hx-swap="outerHTML" class="inline">
-          <button class="text-text-subtle hover:text-red-400">×</button>
+          <button type="submit" class="text-text-subtle hover:text-danger-fg">×</button>
         </form>
       </span>
       {% endfor %}
