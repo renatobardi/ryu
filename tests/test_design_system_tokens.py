@@ -219,3 +219,91 @@ def test_agents_index_uses_semantic_vocabulary():
     assert "bg-agent-idle-bg text-agent-idle-fg" in html
     assert "bg-task-running-bg text-task-running-fg" in html
     assert "bg-task-completed-bg text-task-completed-fg" in html
+
+
+def _chat_messages_ctx(*, has_pending: bool = False, has_partials: bool = False) -> dict:
+    return {
+        "messages": [
+            {"role": "user", "content": "oi", "created_at": _NOW},
+            {"role": "agent", "content": "olá", "created_at": _NOW},
+            {"role": "system", "content": "ops", "created_at": _NOW},
+        ],
+        "pending_task": {"status": "running"} if has_pending else None,
+        "partial_texts": ["parte 1"] if has_partials else [],
+        "partial_activity": ["log line"] if has_partials else [],
+    }
+
+
+def test_chat_messages_use_semantic_vocabulary():
+    html = _render("chat/messages.html", _chat_messages_ctx())
+    for token in ("neutral-", "violet-"):
+        assert token not in html, f"{token} found in chat/messages.html"
+    assert "bg-chat-bubble-agent-bg" in html
+    assert "text-chat-bubble-agent-fg" in html
+    assert "bg-chat-bubble-system-bg" in html
+    assert "text-chat-bubble-system-fg" in html
+    assert "bg-accent" in html
+    assert "text-text-on-accent" in html
+
+
+def test_chat_messages_pending_task_shows_streaming_indicator():
+    html = _render("chat/messages.html", _chat_messages_ctx(has_pending=True))
+    assert 'id="chat-partial"' in html
+    assert "agente digitando…" in html
+    assert "animate-pulse" in html
+
+
+def test_chat_messages_streaming_renders_partial_text():
+    html = _render("chat/messages.html", _chat_messages_ctx(has_pending=True, has_partials=True))
+    assert "parte 1" in html
+    assert "log line" in html
+    assert 'id="chat-partial"' in html
+
+
+def _chat_index_ctx(*, active_session=None, archived=False, pending=False) -> dict:
+    ctx = {
+        **_COMMON_CTX,
+        "active_nav": "chat",
+        "agents": [
+            {"id": "a1", "name": "Coder", "handle": "coder"},
+            {"id": "a2", "name": "Reviewer", "handle": "reviewer"},
+        ],
+        "pinned_agents": [{"id": "a1", "name": "Coder", "handle": "coder"}],
+        "sessions": [
+            {"id": "s1", "title": "Sessão", "pinned": False, "unread_since": _NOW},
+            {"id": "s2", "title": "Outra", "pinned": True, "unread_since": None},
+        ],
+        "active_session": active_session,
+        "messages": [],
+        "pending_task": {"status": "running"} if pending else None,
+        "partial_texts": [],
+        "partial_activity": [],
+    }
+    if active_session:
+        active_session["archived"] = archived
+    return ctx
+
+
+def test_chat_index_uses_semantic_vocabulary():
+    rendered = [
+        _render("chat/index.html", _chat_index_ctx()),
+        _render(
+            "chat/index.html",
+            _chat_index_ctx(active_session={"id": "s1", "title": "Sessão", "pinned": False}, archived=True),
+        ),
+        _render(
+            "chat/index.html",
+            _chat_index_ctx(active_session={"id": "s1", "title": "Sessão", "pinned": True}, pending=True),
+        ),
+    ]
+    html = "\n".join(rendered)
+    for token in ("neutral-", "violet-"):
+        assert token not in html, f"{token} found in chat/index.html"
+    assert "bg-chat-list-bg" in html
+    assert "bg-chat-panel-bg" in html
+    assert "bg-accent" in html
+    assert "text-text-on-accent" in html
+    assert "focus:border-border-focus" in html
+    assert "bg-agent-error-bg" in html
+    assert "text-agent-error-fg" in html
+    assert "border-agent-error-fg" in html

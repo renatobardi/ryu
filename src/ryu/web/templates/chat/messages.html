@@ -2,29 +2,29 @@
 {% for m in messages %}
 <div class="flex {{ 'justify-end' if m.role == 'user' else 'justify-start' }}">
   <div class="max-w-[75%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap
-              {% if m.role == 'user' %}bg-violet-600 text-white
-              {% elif m.role == 'agent' %}bg-neutral-800 text-neutral-100
-              {% else %}bg-amber-950/60 text-amber-300 border border-amber-800/50{% endif %}">
+              {% if m.role == 'user' %}bg-accent text-text-on-accent
+              {% elif m.role == 'agent' %}bg-chat-bubble-agent-bg text-chat-bubble-agent-fg
+              {% else %}bg-chat-bubble-system-bg text-chat-bubble-system-fg border border-border-default{% endif %}">
     {% if m.role != 'user' %}
-    <div class="text-[10px] uppercase tracking-wide mb-1 {{ 'text-amber-500' if m.role == 'system' else 'text-neutral-500' }}">
+    <div class="text-2xs uppercase tracking-wide mb-1 {{ 'text-chat-bubble-system-fg' if m.role == 'system' else 'text-text-subtle' }}">
       {{ 'sistema' if m.role == 'system' else 'agente' }}
     </div>
     {% endif %}
     {{ m.content }}
-    <div class="text-[10px] mt-1 opacity-60">{{ m.created_at.strftime('%H:%M') if m.created_at else '' }}</div>
+    <div class="text-2xs mt-1 opacity-60">{{ m.created_at.strftime('%H:%M') if m.created_at else '' }}</div>
   </div>
 </div>
 {% else %}
 {% if not pending_task %}
-<p class="text-center text-sm text-neutral-600 py-8">Sem mensagens ainda. Diga oi.</p>
+<p class="text-center text-sm text-text-faint py-8">Sem mensagens ainda. Diga oi.</p>
 {% endif %}
 {% endfor %}
 
 {% if pending_task %}
 <div class="flex justify-start" id="chat-partial">
-  <div class="max-w-[75%] rounded-xl px-3 py-2 text-sm bg-neutral-800 text-neutral-100 border border-violet-800/40">
-    <div class="text-[10px] uppercase tracking-wide mb-1 text-violet-400 flex items-center gap-1.5">
-      <span class="inline-block w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse"></span>
+  <div class="max-w-[75%] rounded-xl px-3 py-2 text-sm bg-chat-bubble-agent-bg text-chat-bubble-agent-fg">
+    <div class="text-2xs uppercase tracking-wide mb-1 text-chat-bubble-agent-fg flex items-center gap-1.5">
+      <span class="inline-block w-1.5 h-1.5 rounded-full bg-chat-bubble-agent-fg animate-pulse"></span>
       {% if pending_task.status == 'running' %}agente rodando…{% else %}agente na fila…{% endif %}
     </div>
     {% if partial_texts %}
@@ -33,12 +33,12 @@
     {% if partial_activity %}
     <div class="mt-1 space-y-0.5">
       {% for line in partial_activity %}
-      <div class="text-[11px] font-mono text-neutral-500 truncate">{{ line }}</div>
+      <div class="text-11 font-mono text-text-subtle truncate">{{ line }}</div>
       {% endfor %}
     </div>
     {% endif %}
     {% if not partial_texts and not partial_activity %}
-    <span class="text-neutral-500 animate-pulse">agente digitando…</span>
+    <span class="text-text-subtle animate-pulse">agente digitando…</span>
     {% endif %}
   </div>
 </div>

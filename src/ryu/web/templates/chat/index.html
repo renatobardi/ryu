@@ -6,54 +6,54 @@
 <div class="flex h-[calc(100vh-3.5rem)]">
 
   <!-- Lista de sessões -->
-  <aside class="w-72 shrink-0 border-r border-neutral-800 bg-neutral-950 flex flex-col">
-    <div class="p-3 border-b border-neutral-800">
+  <aside class="w-72 shrink-0 border-r border-border-default bg-chat-list-bg flex flex-col">
+    <div class="p-3 border-b border-border-default">
       <form method="post" action="/w/{{ workspace.slug }}/chat/new" class="flex gap-2">
         <select name="agent_id" required aria-label="Agente para nova conversa"
-                class="flex-1 bg-neutral-900 border border-neutral-700 rounded-md px-2 py-1.5 text-sm text-neutral-200">
+                class="flex-1 bg-surface-sunken border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-body">
           {% for agent in agents %}
           <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.handle }})</option>
           {% endfor %}
         </select>
         <button type="submit"
-                class="px-3 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-sm font-medium text-white">
+                class="px-3 py-1.5 rounded-md bg-accent hover:bg-accent-hover text-sm font-medium text-text-on-accent">
           Novo
         </button>
       </form>
       {% if agents %}
       <form method="post" action="/w/{{ workspace.slug }}/chat/pin-agent" class="mt-2 flex gap-2 items-center">
         <select name="agent_id" required aria-label="Agente para fixar no chat"
-                class="flex-1 bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1 text-xs text-neutral-400">
+                class="flex-1 bg-surface-sunken border border-border-default rounded-md px-2 py-1 text-xs text-text-muted">
           {% for agent in agents %}
           <option value="{{ agent.id }}">{{ agent.name }}</option>
           {% endfor %}
         </select>
         <button type="submit" title="Fixar agente na barra rápida"
-                class="px-2 py-1 rounded text-xs text-neutral-500 hover:text-amber-400 border border-neutral-800">
+                class="px-2 py-1 rounded text-xs text-text-subtle hover:text-chat-bubble-system-fg border border-border-default">
           &#9733; fixar
         </button>
       </form>
       {% endif %}
       {% if not agents %}
-      <p class="mt-2 text-xs text-neutral-500">Nenhum agente no workspace ainda.</p>
+      <p class="mt-2 text-xs text-text-subtle">Nenhum agente no workspace ainda.</p>
       {% endif %}
     </div>
 
     {% if pinned_agents %}
     <!-- Barra de quick-agents (pinned) — conversa nova com um clique -->
-    <div class="px-3 py-2 border-b border-neutral-800 flex flex-wrap gap-1.5" id="pinned-agents-bar">
+    <div class="px-3 py-2 border-b border-border-default flex flex-wrap gap-1.5" id="pinned-agents-bar">
       {% for pa in pinned_agents %}
-      <span class="inline-flex items-center rounded-full bg-neutral-900 border border-neutral-700 overflow-hidden">
+      <span class="inline-flex items-center rounded-full bg-surface-sunken border border-border-strong overflow-hidden">
         <form method="post" action="/w/{{ workspace.slug }}/chat/new" class="inline">
           <input type="hidden" name="agent_id" value="{{ pa.id }}" />
           <button type="submit" title="Nova conversa com {{ pa.name }}"
-                  class="px-2 py-0.5 text-xs text-neutral-300 hover:text-white hover:bg-neutral-800">
+                  class="px-2 py-0.5 text-xs text-text-body hover:text-text-primary hover:bg-surface-hover">
             @{{ pa.handle }}
           </button>
         </form>
         <form method="post" action="/w/{{ workspace.slug }}/chat/unpin-agent/{{ pa.id }}" class="inline">
           <button type="submit" title="Desafixar"
-                  class="px-1.5 py-0.5 text-xs text-neutral-600 hover:text-red-400">&times;</button>
+                  class="px-1.5 py-0.5 text-xs text-text-faint hover:text-agent-error-fg">&times;</button>
         </form>
       </span>
       {% endfor %}
@@ -64,35 +64,35 @@
       {% for s in sessions %}
       <a href="/w/{{ workspace.slug }}/chat/{{ s.id }}"
          class="group flex items-center gap-2 px-3 py-2 mx-1 rounded-md text-sm
-                {% if active_session and active_session.id == s.id %}bg-neutral-800 text-white{% else %}text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200{% endif %}">
-        {% if s.pinned %}<span title="Fixada" class="text-amber-400 text-xs">&#9733;</span>{% endif %}
-        <span class="truncate {{ 'font-semibold text-neutral-100' if s.unread_since else '' }}">{{ s.title }}</span>
+                {% if active_session and active_session.id == s.id %}bg-surface-active text-text-primary{% else %}text-text-muted hover:bg-surface-sunken hover:text-text-body{% endif %}">
+        {% if s.pinned %}<span title="Fixada" class="text-chat-bubble-system-fg text-xs">&#9733;</span>{% endif %}
+        <span class="truncate {{ 'font-semibold text-text-primary' if s.unread_since else '' }}">{{ s.title }}</span>
         {% if s.unread_since %}
-        <span title="Não lida" class="ml-auto shrink-0 w-2 h-2 rounded-full bg-violet-500"></span>
+        <span title="Não lida" class="ml-auto shrink-0 w-2 h-2 rounded-full bg-accent"></span>
         {% endif %}
       </a>
       {% else %}
-      <p class="px-4 py-6 text-sm text-neutral-600">Nenhuma conversa. Crie uma acima.</p>
+      <p class="px-4 py-6 text-sm text-text-faint">Nenhuma conversa. Crie uma acima.</p>
       {% endfor %}
     </nav>
   </aside>
 
   <!-- Conversa -->
-  <section class="flex-1 flex flex-col bg-neutral-900">
+  <section class="flex-1 flex flex-col bg-chat-panel-bg">
     {% if active_session %}
-    <header class="flex items-center gap-2 px-4 py-3 border-b border-neutral-800">
+    <header class="flex items-center gap-2 px-4 py-3 border-b border-border-default">
       <form class="flex-1"
             hx-patch="/api/chat/{{ active_session.id }}"
             hx-ext="json-enc" hx-trigger="change" hx-swap="none">
         <input name="title" value="{{ active_session.title }}"
-               class="w-full bg-transparent text-neutral-100 font-medium text-sm focus:outline-none focus:bg-neutral-800 rounded px-2 py-1" />
+               class="w-full bg-transparent text-text-primary font-medium text-sm focus:outline-none focus:bg-surface-active rounded px-2 py-1" />
       </form>
       <button title="{{ 'Desafixar' if active_session.pinned else 'Fixar' }}"
               hx-patch="/api/chat/{{ active_session.id }}"
               hx-vals='{"pinned": {{ "false" if active_session.pinned else "true" }}}'
               hx-ext="json-enc" hx-swap="none"
               hx-on::after-request="window.location.reload()"
-              class="px-2 py-1 rounded text-sm {{ 'text-amber-400' if active_session.pinned else 'text-neutral-500 hover:text-neutral-300' }}">
+              class="px-2 py-1 rounded text-sm {{ 'text-chat-bubble-system-fg' if active_session.pinned else 'text-text-subtle hover:text-text-body' }}">
         &#9733;
       </button>
       <button title="{{ 'Desarquivar' if active_session.archived else 'Arquivar' }}"
@@ -100,7 +100,7 @@
               hx-vals='{"archived": {{ "false" if active_session.archived else "true" }}}'
               hx-ext="json-enc" hx-swap="none"
               hx-on::after-request="window.location='/w/{{ workspace.slug }}/chat'"
-              class="px-2 py-1 rounded text-sm text-neutral-500 hover:text-neutral-300">
+              class="px-2 py-1 rounded text-sm text-text-subtle hover:text-text-body">
         &#128451;
       </button>
     </header>
@@ -114,9 +114,9 @@
       {% include "chat/messages.html" %}
     </div>
 
-    <footer class="p-3 border-t border-neutral-800">
+    <footer class="p-3 border-t border-border-default">
       {% if active_session.archived %}
-      <div class="text-center text-sm text-neutral-500 py-2 bg-neutral-950 border border-neutral-800 rounded-lg">
+      <div class="text-center text-sm text-text-subtle py-2 bg-surface-sunken border border-border-default rounded-lg">
         Sessão arquivada — somente leitura. Desarquive para enviar mensagens.
       </div>
       {% else %}
@@ -127,9 +127,9 @@
               class="flex-1 flex gap-2" id="chat-composer">
           <input name="content" autocomplete="off" required id="chat-composer-input" aria-label="Mensagem para o agente"
                  placeholder="Mensagem para o agente…"
-                 class="flex-1 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-violet-500" />
+                 class="flex-1 bg-surface-input border border-border-strong rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-faint focus:outline-none focus:border-border-focus" />
           <button type="submit"
-                  class="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-sm font-medium text-white">
+                  class="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-sm font-medium text-text-on-accent">
             Enviar
           </button>
         </form>
@@ -139,7 +139,7 @@
           <button type="submit" title="Parar a resposta em andamento"
                   {% if not pending_task %}disabled{% endif %}
                   class="px-3 py-2 rounded-lg text-sm font-medium border
-                         {% if pending_task %}bg-red-950/50 border-red-800 text-red-300 hover:bg-red-900/50{% else %}bg-neutral-950 border-neutral-800 text-neutral-700 cursor-not-allowed{% endif %}">
+                         {% if pending_task %}bg-agent-error-bg border-agent-error-fg text-agent-error-fg hover:bg-agent-error-fg hover:text-text-on-accent{% else %}bg-surface-input border-border-soft text-text-faint cursor-not-allowed{% endif %}">
             &#9632; Parar
           </button>
         </form>
@@ -165,8 +165,8 @@
     </footer>
     {% else %}
     <div class="flex-1 flex items-center justify-center">
-      <div class="text-center text-neutral-600">
-        <p class="text-lg font-medium text-neutral-400">Chat com agentes</p>
+      <div class="text-center text-text-faint">
+        <p class="text-lg font-medium text-text-muted">Chat com agentes</p>
         <p class="text-sm mt-1">Selecione uma conversa ou crie uma nova.</p>
       </div>
     </div>
