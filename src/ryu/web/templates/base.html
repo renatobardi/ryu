@@ -129,7 +129,7 @@
          'onclick': "window.location.href='/w/" ~ workspace.slug ~ "/board#new-issue'",
        },
        profile_attrs={
-         'onclick': "window.location.href='/w/" ~ workspace.slug ~ "/settings'",
+         'onclick': "window.location.href='/w/" ~ workspace.slug ~ "/profile'",
        }
   ) %}
     {{ nav_item(href='/w/' ~ workspace.slug ~ '/inbox', icon_name='inbox', label='Inbox', active=active_nav is defined and active_nav == 'inbox', count=0, count_attrs={'id': 'sidebar-inbox-count'}) }}
