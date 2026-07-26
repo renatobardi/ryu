@@ -10,7 +10,7 @@
   <section>
     <h2 class="text-sm font-medium text-text-secondary mb-3">Workspace</h2>
     {% if saved %}
-    <p class="text-xs text-emerald-400 mb-2">Alterações salvas.</p>
+    <p class="text-xs text-success-fg mb-2">Alterações salvas.</p>
     {% endif %}
     <form method="post" action="/w/{{ workspace.slug }}/settings" class="space-y-3 bg-surface-card border border-border-default rounded-lg p-4">
       <div>
@@ -36,7 +36,7 @@
                class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm flex-1 focus:outline-none focus:border-border-focus">
         <button onclick="createPat()" class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm px-4 py-1.5 rounded-md">Criar token</button>
       </div>
-      <div id="pat-new" class="hidden text-xs bg-surface-sunken border border-emerald-600/30 rounded-md p-3 font-mono break-all text-emerald-400"></div>
+      <div id="pat-new" class="hidden text-xs bg-surface-sunken border border-success-fg rounded-md p-3 font-mono break-all text-success-fg"></div>
       <ul id="pat-list" class="divide-y divide-border-hairline text-sm"></ul>
     </div>
   </section>
@@ -64,10 +64,10 @@ async function loadPats() {
   for (const t of items) {
     const li = document.createElement('li');
     li.className = 'py-2 flex items-center justify-between';
-    li.innerHTML = `<span class="text-text-secondary">${t.name || '(sem nome)'} <span class="text-xs text-text-subtle">${(t.created_at || '').slice(0, 10)}</span></span>`;
+    li.innerHTML = `<span class="text-text-secondary">${t.name || '(sem nome)'} <span class="text-xs text-text-subtle">· ${(t.created_at || '').slice(0, 10)}</span></span>`;
     const btn = document.createElement('button');
     btn.textContent = 'Revogar';
-    btn.className = 'text-xs text-red-400 hover:text-red-300';
+    btn.className = 'text-xs text-danger-fg';
     btn.onclick = async () => {
       await fetch(`/api/auth/tokens/${t.id}`, {method: 'DELETE'});
       loadPats();

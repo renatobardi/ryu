@@ -39,7 +39,7 @@
           <option value="{{ r }}" {% if m.role == r %}selected{% endif %}>{{ r }}</option>
           {% endfor %}
         </select>
-        <button onclick="removeMember('{{ m.id }}')" class="text-xs text-red-400 hover:text-red-300">remover</button>
+        <button onclick="removeMember('{{ m.id }}')" class="text-xs text-danger-fg hover:text-danger-fg">remover</button>
         {% else %}
         <span class="text-xs font-mono text-text-muted">{{ m.role }}</span>
         {% endif %}
@@ -59,7 +59,7 @@
           <div class="text-xs text-text-subtle">papel: {{ inv.role }} · expira {{ inv.expires_at }}</div>
         </div>
         {% if is_admin %}
-        <button onclick="revokeInvite('{{ inv.id }}')" class="text-xs text-red-400 hover:text-red-300">revogar</button>
+        <button onclick="revokeInvite('{{ inv.id }}')" class="text-xs text-danger-fg hover:text-danger-fg">revogar</button>
         {% endif %}
       </li>
       {% endfor %}
@@ -71,7 +71,7 @@
 
   {% if my_role != 'owner' or members|length > 1 %}
   <section>
-    <button onclick="leaveWorkspace()" class="bg-surface-sunken hover:bg-surface-active text-red-400 text-sm px-4 py-1.5 rounded-md">Sair do workspace</button>
+    <button onclick="leaveWorkspace()" class="bg-surface-sunken hover:bg-surface-active text-danger-fg text-sm px-4 py-1.5 rounded-md">Sair do workspace</button>
   </section>
   {% endif %}
 </div>
@@ -90,7 +90,7 @@ async function sendInvite() {
   });
   const data = await r.json();
   if (r.ok) { window.location.reload(); }
-  else { msg.textContent = data.detail || 'erro ao convidar'; msg.className = 'text-xs text-red-400 mt-2'; }
+  else { msg.textContent = data.detail || 'erro ao convidar'; msg.className = 'text-xs text-danger-fg mt-2'; }
 }
 async function changeRole(memberId, role) {
   const r = await fetch(`/api/workspaces/${WS_ID}/members/${memberId}`, {
