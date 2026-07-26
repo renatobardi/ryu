@@ -108,10 +108,9 @@ def test_base_html_uses_data_theme_dark_and_new_config(base_html):
     assert "'status-in-progress': 'var(--status-in-progress)'" in base_html
 
 
-def test_legacy_palette_classes_remain_in_templates(base_html, templates_text):
-    assert "zinc-" in base_html
-    assert "violet-" in base_html
-    assert "neutral-" in templates_text
+def test_legacy_palette_classes_remain_in_templates(templates_text):
+    for token in ("zinc-", "violet-", "neutral-"):
+        assert token in templates_text, f"{token} palette dropped from templates"
 
 
 def test_semantic_bg_surface_card_resolves_to_token_value(app_css, base_html):
