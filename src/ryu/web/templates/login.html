@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Ryu — Login{% endblock %}
+{% block content %}
+<div class="min-h-full flex items-center justify-center px-4">
+  <div class="w-full max-w-sm">
+    <div class="flex items-center gap-3 mb-8 justify-center">
+      <div class="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-white text-lg font-bold">R</div>
+      <div>
+        <div class="text-xl font-semibold text-zinc-100">Ryu</div>
+        <div class="text-xs text-zinc-500">issue tracker com agentes de IA</div>
+      </div>
+    </div>
+
+    <div class="bg-[#111116] border border-zinc-800 rounded-xl p-6">
+      <!-- Passo 1: e-mail -->
+      <form id="email-form" class="space-y-3">
+        <label class="block text-sm text-zinc-400">E-mail</label>
+        <input id="email" name="email" type="email" required autofocus
+               placeholder="voce@empresa.com"
+               class="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-violet-500">
+        <button type="submit"
+                class="w-full bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-md px-3 py-2">
+          Enviar código
+        </button>
+      </form>
+
+      <!-- Passo 2: código -->
+      <form id="code-form" class="space-y-3 hidden">
+        <p class="text-sm text-zinc-400">Enviamos um código de 6 dígitos para
+          <span id="email-echo" class="text-zinc-200 font-medium"></span>.
+          <span class="text-zinc-500">(em dev, veja o log do servidor)</span>
+        </p>
+        <input id="code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required
+               placeholder="000000"
+               class="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-center tracking-[0.5em] text-lg text-zinc-100 placeholder-zinc-700 focus:outline-none focus:border-violet-500">
+        <button type="submit"
+                class="w-full bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-md px-3 py-2">
+          Entrar
+        </button>
+        <button type="button" id="back-btn"
+                class="w-full text-zinc-500 hover:text-zinc-300 text-xs">usar outro e-mail</button>
+      </form>
+
+      <p id="login-error" class="hidden mt-3 text-sm text-red-400"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const emailForm = document.getElementById('email-form');
+  const codeForm  = document.getElementById('code-form');
+  const errEl     = document.getElementById('login-error');
+  let email = '';
+
+  function showError(msg) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+  function clearError()   { errEl.classList.add('hidden'); }
+
+  emailForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); clearError();
+    email = document.getElementById('email').value.trim().toLowerCase();
+    try {
+      const r = await fetch('/api/auth/request-code', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email }),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); return showError(d.detail || 'Falha ao enviar código'); }
+      document.getElementById('email-echo').textContent = email;
+      emailForm.classList.add('hidden');
+      codeForm.classList.remove('hidden');
+      document.getElementById('code').focus();
+    } catch (e) { showError('Erro de rede'); }
+  });
+
+  codeForm.addEventListener('submit', async (e) => {
+    e.preventDefault(); clearError();
+    const code = document.getElementById('code').value.trim();
+    try {
+      const r = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email, code }),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); return showError(d.detail || 'Código inválido'); }
+      window.location.href = '/';
+    } catch (e) { showError('Erro de rede'); }
+  });
+
+  document.getElementById('back-btn').addEventListener('click', () => {
+    codeForm.classList.add('hidden');
+    emailForm.classList.remove('hidden');
+    clearError();
+  });
+})();
+</script>
+{% endblock %}

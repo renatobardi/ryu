@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ workspace.name }} — Usage{% endblock %}
+{% block content %}
+<div class="flex flex-col h-full overflow-y-auto">
+  <div class="px-6 py-4 border-b border-zinc-800">
+    <h1 class="text-lg font-semibold text-zinc-100">Usage</h1>
+    <p class="text-xs text-zinc-500 mt-0.5">Últimos {{ summary.days }} dias — desde {{ summary.since[:10] }}</p>
+  </div>
+
+  <div class="grid grid-cols-4 gap-4 px-6 py-6">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+      <p class="text-xs text-zinc-500">Tasks</p>
+      <p class="text-2xl font-semibold text-zinc-100">{{ summary.totals.tasks }}</p>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+      <p class="text-xs text-zinc-500">Input tokens</p>
+      <p class="text-2xl font-semibold text-zinc-100">{{ "{:,}".format(summary.totals.input_tokens) }}</p>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+      <p class="text-xs text-zinc-500">Output tokens</p>
+      <p class="text-2xl font-semibold text-zinc-100">{{ "{:,}".format(summary.totals.output_tokens) }}</p>
+    </div>
+    <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+      <p class="text-xs text-zinc-500">Custo (USD)</p>
+      <p class="text-2xl font-semibold text-emerald-400">${{ "%.4f"|format(summary.totals.cost_usd) }}</p>
+    </div>
+  </div>
+
+  <div class="px-6 pb-6">
+    <h2 class="text-sm font-medium text-zinc-300 mb-2">Por agente</h2>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs text-zinc-500 border-b border-zinc-800">
+          <th class="py-2 pr-4">Agente</th>
+          <th class="py-2 pr-4">Tasks</th>
+          <th class="py-2 pr-4">Input</th>
+          <th class="py-2 pr-4">Output</th>
+          <th class="py-2 pr-4">Custo</th>
+          <th class="py-2">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-800/60">
+        {% for row in summary.by_agent %}
+        <tr class="text-zinc-300">
+          <td class="py-2 pr-4">{{ row.agent_name }}</td>
+          <td class="py-2 pr-4">{{ row.tasks }}</td>
+          <td class="py-2 pr-4">{{ "{:,}".format(row.input_tokens) }}</td>
+          <td class="py-2 pr-4">{{ "{:,}".format(row.output_tokens) }}</td>
+          <td class="py-2 pr-4">${{ "%.4f"|format(row.cost_usd) }}</td>
+          <td class="py-2 text-xs text-zinc-500">
+            {% for st, n in row.by_status.items() %}{{ st }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="py-6 text-center text-zinc-500">Sem tasks no período.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="px-6 pb-10">
+    <h2 class="text-sm font-medium text-zinc-300 mb-2">Por dia</h2>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-xs text-zinc-500 border-b border-zinc-800">
+          <th class="py-2 pr-4">Dia</th>
+          <th class="py-2 pr-4">Tasks</th>
+          <th class="py-2 pr-4">Input</th>
+          <th class="py-2 pr-4">Output</th>
+          <th class="py-2 pr-4">Custo</th>
+          <th class="py-2">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-zinc-800/60">
+        {% for row in summary.by_day %}
+        <tr class="text-zinc-300">
+          <td class="py-2 pr-4">{{ row.day }}</td>
+          <td class="py-2 pr-4">{{ row.tasks }}</td>
+          <td class="py-2 pr-4">{{ "{:,}".format(row.input_tokens) }}</td>
+          <td class="py-2 pr-4">{{ "{:,}".format(row.output_tokens) }}</td>
+          <td class="py-2 pr-4">${{ "%.4f"|format(row.cost_usd) }}</td>
+          <td class="py-2 text-xs text-zinc-500">
+            {% for st, n in row.by_status.items() %}{{ st }}: {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="py-6 text-center text-zinc-500">Sem tasks no período.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+[project]
+name = "ryu"
+version = "0.1.0"
+description = "Ryu — issue tracker onde agentes de IA são membros da equipe (clone do multica em Python)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.20",
+    "asyncpg>=0.29",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.9",
+    "pyjwt>=2.8",
+    "httpx>=0.27",
+    "typer>=0.12",
+    "rich>=13",
+    "apscheduler>=3.10",
+    "structlog>=24",
+    "itsdangerous>=2.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5"]
+
+[project.scripts]
+ryu = "ryu.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ryu"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ workspace.name }} — Inbox{% endblock %}
+{% block content %}
+<div class="flex flex-col h-full">
+  <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+    <div class="flex items-center gap-3">
+      <h1 class="text-lg font-semibold text-zinc-100">Inbox</h1>
+      {% if unread %}<span class="bg-violet-600 text-white text-xs rounded-full px-2 py-0.5">{{ unread }}</span>{% endif %}
+    </div>
+    <div class="flex items-center gap-2">
+      <form method="get" class="flex items-center gap-2">
+        <select name="severity" onchange="this.form.submit()"
+                class="bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-300">
+          <option value="">Todas severidades</option>
+          {% for sev, title in severity_titles.items() %}
+          <option value="{{ sev }}" {% if filter_severity == sev %}selected{% endif %}>{{ title }}</option>
+          {% endfor %}
+        </select>
+        <select name="read" onchange="this.form.submit()"
+                class="bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-300">
+          <option value="">Todas</option>
+          <option value="false" {% if filter_read == False %}selected{% endif %}>Não lidas</option>
+          <option value="true" {% if filter_read == True %}selected{% endif %}>Lidas</option>
+        </select>
+      </form>
+      <form hx-post="/w/{{ workspace.slug }}/inbox/mark-all-read" hx-target="#inbox-items" hx-swap="outerHTML">
+        <button class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm rounded-md px-3 py-1.5">
+          Marcar todas como lidas
+        </button>
+      </form>
+    </div>
+  </div>
+  <div class="flex-1 overflow-y-auto">
+    {% include "inbox/_items.html" %}
+  </div>
+</div>
+{% endblock %}

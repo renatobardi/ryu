@@ -1,0 +1,35 @@
+<div id="inbox-items" class="divide-y divide-zinc-800">
+  {% if not items %}
+  <div class="px-6 py-12 text-center text-sm text-zinc-500">Inbox vazia. Nada por aqui.</div>
+  {% endif %}
+  {% for item in items %}
+  <div class="flex items-start gap-3 px-6 py-4 {% if not item.read %}bg-zinc-900/60{% endif %}">
+    <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0
+      {% if item.severity == 'action_required' %}bg-red-500
+      {% elif item.severity == 'attention' %}bg-amber-400
+      {% else %}bg-zinc-500{% endif %}"></span>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2">
+        <span class="text-sm {% if item.read %}text-zinc-400{% else %}text-zinc-100 font-medium{% endif %}">{{ item.title }}</span>
+        <span class="text-[10px] uppercase tracking-wide text-zinc-500">{{ severity_titles.get(item.severity, item.severity) }}</span>
+      </div>
+      {% if item.body %}<p class="text-xs text-zinc-500 mt-0.5 truncate">{{ item.body }}</p>{% endif %}
+      <p class="text-[11px] text-zinc-600 mt-1">{{ item.created_at.strftime('%d/%m %H:%M') if item.created_at else '' }}</p>
+    </div>
+    <div class="flex items-center gap-1">
+      {% if not item.read %}
+      <form hx-post="/w/{{ workspace.slug }}/inbox/item-action" hx-target="#inbox-items" hx-swap="outerHTML">
+        <input type="hidden" name="item_id" value="{{ item.id }}">
+        <input type="hidden" name="action" value="read">
+        <button class="text-xs text-zinc-400 hover:text-zinc-200 px-2 py-1 rounded hover:bg-zinc-800">Lida</button>
+      </form>
+      {% endif %}
+      <form hx-post="/w/{{ workspace.slug }}/inbox/item-action" hx-target="#inbox-items" hx-swap="outerHTML">
+        <input type="hidden" name="item_id" value="{{ item.id }}">
+        <input type="hidden" name="action" value="archive">
+        <button class="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded hover:bg-zinc-800">Arquivar</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>

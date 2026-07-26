@@ -1,0 +1,15 @@
+<div id="comments" class="space-y-3">
+  {% for c in comments %}
+  <div class="bg-zinc-900/60 border border-zinc-800 rounded-lg p-3">
+    <div class="flex items-center gap-2 mb-1">
+      <span class="text-xs font-medium {% if c.author_type == 'agent' %}text-violet-400{% elif c.author_type == 'system' %}text-zinc-500{% else %}text-zinc-300{% endif %}">
+        {% if c.author_type == 'agent' %}🤖 agent{% elif c.author_type == 'system' %}sistema{% else %}👤 member{% endif %}
+      </span>
+      <span class="text-[11px] text-zinc-600">{{ c.created_at.strftime('%d/%m %H:%M') if c.created_at else '' }}</span>
+    </div>
+    <p class="text-sm text-zinc-200 whitespace-pre-wrap">{{ c.body }}</p>
+  </div>
+  {% else %}
+  <p class="text-sm text-zinc-600">Nenhum comentário ainda.</p>
+  {% endfor %}
+</div>

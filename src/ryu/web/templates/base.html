@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Ryu{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <link rel="stylesheet" href="/static/app.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            base: '#0b0b0f',
+            panel: '#111116',
+            edge: '#1f1f27',
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-[#0b0b0f] text-zinc-200 antialiased h-screen overflow-hidden">
+<div class="flex h-full">
+
+  {% if workspace is defined and workspace %}
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="w-56 shrink-0 flex flex-col border-r border-zinc-800/70 bg-[#0e0e13]">
+    <div class="px-4 py-4 flex items-center gap-2 border-b border-zinc-800/70">
+      <div class="w-6 h-6 rounded-md bg-violet-600 flex items-center justify-center text-white text-xs font-bold">R</div>
+      <div class="min-w-0">
+        <div class="text-sm font-semibold text-zinc-100 truncate">{{ workspace.name }}</div>
+        <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Ryu</div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-0.5 text-sm">
+      {% set nav = [
+        ('board',      'Issues / Board', '/w/' ~ workspace.slug ~ '/board',      '▦'),
+        ('agents',     'Agents',         '/w/' ~ workspace.slug ~ '/agents',     '🤖'),
+        ('chat',       'Chat',           '/w/' ~ workspace.slug ~ '/chat',       '💬'),
+        ('autopilots', 'Autopilots',     '/w/' ~ workspace.slug ~ '/autopilots', '⚡'),
+        ('skills',     'Skills',         '/w/' ~ workspace.slug ~ '/skills',     '📚'),
+        ('squads',     'Squads',         '/w/' ~ workspace.slug ~ '/squads',     '👥'),
+        ('inbox',      'Inbox',          '/w/' ~ workspace.slug ~ '/inbox',      '📥'),
+        ('usage',      'Usage',          '/w/' ~ workspace.slug ~ '/usage',      '📊'),
+      ] %}
+      {% for key, label, href, icon in nav %}
+      <a href="{{ href }}"
+         class="flex items-center gap-2.5 px-3 py-1.5 rounded-md
+                {% if active_nav is defined and active_nav == key %}bg-zinc-800/80 text-zinc-100{% else %}text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200{% endif %}">
+        <span class="w-4 text-center text-xs opacity-80">{{ icon }}</span>
+        <span class="flex-1">{{ label }}</span>
+        {% if key == 'inbox' %}
+        <span id="sidebar-inbox-count"
+              class="hidden text-[10px] font-semibold bg-violet-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center"></span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </nav>
+
+    <div class="px-4 py-3 border-t border-zinc-800/70 flex items-center justify-between gap-2">
+      {% if user is defined and user %}
+      <div class="min-w-0">
+        <div class="text-xs text-zinc-300 truncate">{{ user.name or user.email }}</div>
+        <div class="text-[10px] text-zinc-500 truncate">{{ user.email }}</div>
+      </div>
+      <button onclick="ryuLogout()" title="Sair"
+              class="text-zinc-500 hover:text-zinc-200 text-xs shrink-0">Sair</button>
+      {% endif %}
+    </div>
+  </aside>
+  {% endif %}
+
+  <!-- ── Conteúdo ────────────────────────────────────────────── -->
+  <div class="flex-1 flex flex-col min-w-0">
+    {% if workspace is defined and workspace %}
+    <header class="h-11 shrink-0 flex items-center justify-end gap-4 px-5 border-b border-zinc-800/70 bg-[#0e0e13]">
+      <span id="ws-status" class="text-[10px] text-zinc-600" title="conexão realtime">●</span>
+      <a href="/w/{{ workspace.slug }}/inbox" class="relative text-zinc-400 hover:text-zinc-200 text-sm">
+        Inbox
+        <span id="topbar-inbox-count"
+              class="hidden absolute -top-2 -right-4 text-[10px] font-semibold bg-violet-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center"></span>
+      </a>
+    </header>
+    {% endif %}
+    <main class="flex-1 overflow-y-auto">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<script>
+async function ryuLogout() {
+  try { await fetch('/api/auth/logout', {method: 'POST'}); } catch (e) {}
+  window.location.href = '/login';
+}
+</script>
+
+{% if workspace is defined and workspace %}
+<script>
+(function () {
+  const WORKSPACE_ID = "{{ workspace.id }}";
+
+  // ── Contador de inbox ───────────────────────────────────────
+  async function refreshInboxCount() {
+    try {
+      const r = await fetch(`/api/inbox/unread-count?workspace_id=${WORKSPACE_ID}`);
+      if (!r.ok) return;
+      const d = await r.json();
+      const n = d.unread || 0;
+      for (const id of ['sidebar-inbox-count', 'topbar-inbox-count']) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.textContent = n;
+        el.classList.toggle('hidden', n === 0);
+      }
+    } catch (e) { /* silencioso */ }
+  }
+  refreshInboxCount();
+
+  // ── WebSocket realtime ──────────────────────────────────────
+  let retryMs = 1000;
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${proto}://${location.host}/ws/${WORKSPACE_ID}`);
+    const dot = document.getElementById('ws-status');
+
+    ws.onopen = () => {
+      retryMs = 1000;
+      if (dot) { dot.classList.remove('text-zinc-600', 'text-red-500'); dot.classList.add('text-emerald-500'); }
+    };
+
+    ws.onmessage = (msg) => {
+      let payload;
+      try { payload = JSON.parse(msg.data); } catch (e) { return; }
+      const { event, data } = payload;
+      if (!event) return;
+
+      // Evento genérico + evento específico (ex.: 'ryu:issue:created')
+      window.dispatchEvent(new CustomEvent('ryu:event', { detail: { event, data } }));
+      window.dispatchEvent(new CustomEvent('ryu:' + event, { detail: data }));
+
+      // Integração htmx: qualquer elemento com hx-trigger="ryu:<event> from:window" reage sozinho.
+      // Também disparamos no body para triggers 'from:body'.
+      if (window.htmx) { htmx.trigger(document.body, 'ryu:' + event, data); }
+
+      if (event === 'inbox:new') { refreshInboxCount(); }
+    };
+
+    ws.onclose = () => {
+      if (dot) { dot.classList.remove('text-emerald-500'); dot.classList.add('text-red-500'); }
+      setTimeout(connect, retryMs);
+      retryMs = Math.min(retryMs * 2, 15000);
+    };
+    ws.onerror = () => { try { ws.close(); } catch (e) {} };
+  }
+  connect();
+})();
+</script>
+{% endif %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

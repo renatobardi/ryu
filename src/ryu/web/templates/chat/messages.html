@@ -1,0 +1,26 @@
+{# Partial: lista de mensagens de uma sessão — alvo do polling HTMX #}
+{% for m in messages %}
+<div class="flex {{ 'justify-end' if m.role == 'user' else 'justify-start' }}">
+  <div class="max-w-[75%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap
+              {% if m.role == 'user' %}bg-violet-600 text-white
+              {% elif m.role == 'agent' %}bg-neutral-800 text-neutral-100
+              {% else %}bg-amber-950/60 text-amber-300 border border-amber-800/50{% endif %}">
+    {% if m.role != 'user' %}
+    <div class="text-[10px] uppercase tracking-wide mb-1 {{ 'text-amber-500' if m.role == 'system' else 'text-neutral-500' }}">
+      {{ 'sistema' if m.role == 'system' else 'agente' }}
+    </div>
+    {% endif %}
+    {{ m.content }}
+    <div class="text-[10px] mt-1 opacity-60">{{ m.created_at.strftime('%H:%M') if m.created_at else '' }}</div>
+  </div>
+</div>
+{% else %}
+<p class="text-center text-sm text-neutral-600 py-8">Sem mensagens ainda. Diga oi.</p>
+{% endfor %}
+{% if messages and messages[-1].role == 'user' %}
+<div class="flex justify-start">
+  <div class="rounded-xl px-3 py-2 text-sm bg-neutral-800 text-neutral-500 animate-pulse">
+    agente digitando…
+  </div>
+</div>
+{% endif %}

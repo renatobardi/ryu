@@ -1,0 +1,52 @@
+/* Ryu — estilos globais complementares ao Tailwind (dark, estilo Linear) */
+
+:root {
+  color-scheme: dark;
+}
+
+/* Scrollbars discretas */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a33 transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #2a2a33; border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: #3a3a45; }
+
+/* Seleção */
+::selection { background: rgba(139, 92, 246, 0.35); }
+
+/* htmx: transições suaves em swaps */
+.htmx-swapping { opacity: 0; transition: opacity 120ms ease-out; }
+.htmx-settling { opacity: 1; transition: opacity 120ms ease-in; }
+.htmx-request { opacity: 0.6; pointer-events: none; }
+
+/* ── Cores de status de issue (bolinhas) ─────────────────────── */
+.ryu-status-backlog     { background: #52525b; }
+.ryu-status-todo        { background: #a1a1aa; }
+.ryu-status-in_progress { background: #eab308; }
+.ryu-status-in_review   { background: #8b5cf6; }
+.ryu-status-done        { background: #22c55e; }
+.ryu-status-blocked     { background: #ef4444; }
+.ryu-status-cancelled   { background: #3f3f46; }
+
+/* ── Pills de status de agente ───────────────────────────────── */
+.ryu-agent-idle    { background: rgba(82, 82, 91, 0.35);  color: #a1a1aa; }
+.ryu-agent-working { background: rgba(234, 179, 8, 0.18); color: #facc15; }
+.ryu-agent-blocked { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+.ryu-agent-error   { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+.ryu-agent-offline { background: rgba(63, 63, 70, 0.4);   color: #71717a; }
+
+/* ── Pills de status de task ─────────────────────────────────── */
+.ryu-task-queued     { background: rgba(82, 82, 91, 0.35);   color: #a1a1aa; }
+.ryu-task-dispatched { background: rgba(59, 130, 246, 0.18); color: #93c5fd; }
+.ryu-task-running    { background: rgba(234, 179, 8, 0.18);  color: #facc15; }
+.ryu-task-completed  { background: rgba(34, 197, 94, 0.18);  color: #4ade80; }
+.ryu-task-failed     { background: rgba(239, 68, 68, 0.2);   color: #f87171; }
+.ryu-task-cancelled  { background: rgba(63, 63, 70, 0.4);    color: #71717a; }
+
+/* ── Pills de severidade do inbox ────────────────────────────── */
+.ryu-sev-action_required { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+.ryu-sev-attention       { background: rgba(234, 179, 8, 0.18); color: #facc15; }
+.ryu-sev-info            { background: rgba(82, 82, 91, 0.35);  color: #a1a1aa; }

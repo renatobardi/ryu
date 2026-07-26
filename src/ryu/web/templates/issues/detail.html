@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ issue.key }} — {{ issue.title }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8">
+  <div>
+    <div class="flex items-center gap-2 mb-2">
+      <a href="/w/{{ workspace.slug }}/board" class="text-xs text-zinc-500 hover:text-zinc-300">← Board</a>
+      <span class="text-xs font-mono text-zinc-500">{{ issue.key }}</span>
+      {% for lb in labels %}
+      <span class="text-[10px] px-1.5 py-0.5 rounded-full border border-zinc-700"
+            style="color: {{ lb.color }};">{{ lb.name }}</span>
+      {% endfor %}
+    </div>
+    <h1 class="text-2xl font-semibold text-zinc-100 mb-3">{{ issue.title }}</h1>
+    {% if issue.description %}
+    <div class="text-sm text-zinc-300 whitespace-pre-wrap bg-zinc-900/60 border border-zinc-800 rounded-lg p-4 mb-6">{{ issue.description }}</div>
+    {% endif %}
+
+    {% if sub_issues %}
+    <h2 class="text-sm font-medium text-zinc-400 mb-2">Sub-issues</h2>
+    <ul class="mb-6 space-y-1">
+      {% for s in sub_issues %}
+      <li class="flex items-center gap-2 text-sm">
+        <span class="text-[11px] font-mono text-zinc-500">{{ s.key }}</span>
+        <a href="/w/{{ workspace.slug }}/issues/{{ s.key }}" class="text-zinc-200 hover:text-violet-300">{{ s.title }}</a>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">{{ status_titles.get(s.status, s.status) }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <h2 class="text-sm font-medium text-zinc-400 mb-2">Comentários</h2>
+    {% include "issues/_comments.html" %}
+
+    <form hx-post="/w/{{ workspace.slug }}/issues/{{ issue.key }}/comments"
+          hx-target="#comments" hx-swap="outerHTML"
+          hx-on::after-request="this.reset()"
+          class="mt-4">
+      <textarea name="body" required rows="3" placeholder="Escreva um comentário..."
+                class="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-500"></textarea>
+      <div class="mt-2 flex justify-end">
+        <button type="submit" class="bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-md px-4 py-1.5">Comentar</button>
+      </div>
+    </form>
+
+    {% if activity %}
+    <h2 class="text-sm font-medium text-zinc-400 mt-8 mb-2">Atividade</h2>
+    <ul class="space-y-1">
+      {% for a in activity %}
+      <li class="text-xs text-zinc-500">
+        <span class="text-zinc-400">{{ a.action }}</span>
+        · {{ a.actor_type }} · {{ a.created_at.strftime('%d/%m %H:%M') if a.created_at else '' }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <aside class="space-y-4">
+    <div>
+      <label class="text-[11px] uppercase tracking-wide text-zinc-500 block mb-1">Status</label>
+      <select hx-patch="/api/issues/{{ issue.id }}"
+              hx-vals='js:{"status": event.target.value}' hx-ext="json-enc" hx-swap="none"
+              name="status"
+              class="w-full bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-200">
+        {% for st in statuses %}
+        <option value="{{ st }}" {% if issue.status == st %}selected{% endif %}>{{ status_titles.get(st, st) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="text-[11px] uppercase tracking-wide text-zinc-500 block mb-1">Prioridade</label>
+      <select hx-patch="/api/issues/{{ issue.id }}"
+              hx-vals='js:{"priority": event.target.value}' hx-ext="json-enc" hx-swap="none"
+              name="priority"
+              class="w-full bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-200">
+        {% for p in priorities %}
+        <option value="{{ p }}" {% if issue.priority == p %}selected{% endif %}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="text-[11px] uppercase tracking-wide text-zinc-500 block mb-1">Agente</label>
+      <select hx-patch="/api/issues/{{ issue.id }}"
+              hx-vals='js:{"assignee_type": event.target.value ? "agent" : null, "assignee_id": event.target.value || null}'
+              hx-ext="json-enc" hx-swap="none"
+              class="w-full bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-200">
+        <option value="">Sem assignee</option>
+        {% for a in agents %}
+        <option value="{{ a.id }}" {% if issue.assignee_type == 'agent' and issue.assignee_id == a.id %}selected{% endif %}>@{{ a.handle }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="text-xs text-zinc-500 space-y-1 pt-2 border-t border-zinc-800">
+      <p>Criada: {{ issue.created_at.strftime('%d/%m/%Y %H:%M') if issue.created_at else '—' }}</p>
+      <p>Atualizada: {{ issue.updated_at.strftime('%d/%m/%Y %H:%M') if issue.updated_at else '—' }}</p>
+      {% if issue.assignee_type == 'agent' %}
+      <p class="text-violet-400">Assignee: 🤖 {{ agent_names.get(issue.assignee_id, 'agent') }}</p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

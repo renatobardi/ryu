@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Agents — {{ workspace.name }}{% endblock %}
+{% block content %}
+<div class="p-6 max-w-5xl mx-auto space-y-8">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-semibold text-zinc-100">Agents</h1>
+  </div>
+
+  <form method="post" action="/w/{{ workspace.slug }}/agents"
+        class="flex flex-wrap gap-2 items-end bg-zinc-900/60 border border-zinc-800 rounded-lg p-4">
+    <div class="flex flex-col gap-1">
+      <label class="text-xs text-zinc-400">Nome</label>
+      <input name="name" required placeholder="Codebot"
+             class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100">
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs text-zinc-400">Handle</label>
+      <input name="handle" placeholder="@codebot"
+             class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100">
+    </div>
+    <div class="flex flex-col gap-1 grow">
+      <label class="text-xs text-zinc-400">Descrição</label>
+      <input name="description" placeholder="O que este agente faz"
+             class="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100">
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs text-zinc-400">Runtime</label>
+      <select name="runtime" class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1.5 text-sm text-zinc-100">
+        <option value="claude">claude</option>
+        <option value="codex">codex</option>
+        <option value="gemini">gemini</option>
+      </select>
+    </div>
+    <button class="bg-violet-600 hover:bg-violet-500 text-white text-sm rounded px-4 py-1.5">Criar agente</button>
+  </form>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+    {% for a in agents %}
+    <div class="bg-zinc-900/60 border border-zinc-800 rounded-lg p-4 space-y-1">
+      <div class="flex items-center justify-between">
+        <div class="font-medium text-zinc-100">{{ a.name }}</div>
+        <span class="text-xs px-2 py-0.5 rounded-full ryu-agent-{{ a.status }}
+          {% if a.status == 'working' %}bg-amber-500/15 text-amber-300
+          {% elif a.status == 'error' %}bg-red-500/15 text-red-300
+          {% elif a.status == 'offline' %}bg-zinc-700/40 text-zinc-400
+          {% else %}bg-emerald-500/15 text-emerald-300{% endif %}">{{ a.status }}</span>
+      </div>
+      <div class="text-xs text-zinc-500">@{{ a.handle }} · {{ a.runtime }}</div>
+      {% if a.description %}<div class="text-sm text-zinc-400">{{ a.description }}</div>{% endif %}
+    </div>
+    {% else %}
+    <div class="text-sm text-zinc-500 col-span-full">Nenhum agente ainda. Crie o primeiro acima.</div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <h2 class="text-sm font-semibold text-zinc-300 mb-2">Tasks recentes</h2>
+    <div class="bg-zinc-900/60 border border-zinc-800 rounded-lg overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="text-left text-xs text-zinc-500 border-b border-zinc-800">
+          <tr><th class="px-3 py-2">Agente</th><th class="px-3 py-2">Kind</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Criada</th></tr>
+        </thead>
+        <tbody>
+          {% for t in tasks %}
+          <tr class="border-b border-zinc-800/60">
+            <td class="px-3 py-2 text-zinc-300">{{ agent_names.get(t.agent_id, t.agent_id[:8]) }}</td>
+            <td class="px-3 py-2 text-zinc-400">{{ t.kind }}</td>
+            <td class="px-3 py-2"><span class="ryu-task-{{ t.status }} text-xs">{{ t.status }}</span></td>
+            <td class="px-3 py-2 text-zinc-500 text-xs">{{ t.created_at.strftime('%d/%m %H:%M') if t.created_at else '' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="px-3 py-4 text-zinc-500 text-sm">Nenhuma task ainda.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
