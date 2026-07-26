@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    # Todo merge na main publica uma release, subindo a minor.
+    # Todo merge na main publica uma imagem, subindo o último número da versão.
     branches:
       - main
     # Uma tag v* criada à mão continua funcionando como antes.
@@ -14,6 +14,13 @@ on:
         description: "Tag da imagem a publicar (ex.: v0.2.0 ou latest)"
         required: true
         default: "latest"
+
+# Serializa as publicações. Sem isso, dois merges próximos calculam a mesma
+# versão e o segundo falha ao criar a tag; enfileirados, o segundo recalcula
+# depois do primeiro e segue o contador.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   # write porque o job cria a tag da release. Tag criada com o GITHUB_TOKEN não
@@ -35,39 +42,35 @@ jobs:
         id: meta
         run: |
           set -euo pipefail
+          create_tag=false
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             tag="${{ github.event.inputs.tag }}"
           elif [ "${{ github.ref_type }}" = "tag" ]; then
             tag="${{ github.ref_name }}"
           else
-            # Merge na main: sobe o último número a partir da última tag v*
+            # Merge na main: sobe o último número da última versão publicada
             # (v0.4.7 -> v0.4.8). Os dois primeiros só mudam por tag manual.
-            latest="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
+            #
+            # O filtro é ancorado de propósito: um `git tag -l 'v*.*.*'` também
+            # casaria v1.2.3-rc1 e v0.4.7.1, e daí sairia um "patch" como
+            # "3-rc1" que aborta a aritmética, ou um número que anda pra trás.
+            versions="$(git tag -l --sort=-v:refname | grep -Ex 'v[0-9]+\.[0-9]+\.[0-9]+' || true)"
+            latest="${versions%%$'\n'*}"
             if [ -z "$latest" ]; then
-              tag="v0.1.0"
-            else
-              rest="${latest#v}"
-              major="${rest%%.*}"
-              minor="${rest#*.}"
-              minor="${minor%%.*}"
-              patch="${rest##*.}"
-              tag="v${major}.${minor}.$((patch + 1))"
+              echo "Nenhuma tag de versão no repositório — crie a primeira à mão." >&2
+              exit 1
             fi
-            echo "última tag: ${latest:-nenhuma} -> nova: $tag"
+            numbers="${latest#v}"
+            major="${numbers%%.*}"
+            minor="${numbers#*.}"
+            minor="${minor%%.*}"
+            patch="${numbers##*.}"
+            tag="v${major}.${minor}.$((patch + 1))"
+            create_tag=true
+            echo "última versão: $latest -> nova: $tag"
           fi
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-
-      - name: Create release tag
-        # Só quando a versão foi calculada aqui; tag criada à mão já existe.
-        if: github.event_name == 'push' && github.ref_type == 'branch'
-        env:
-          TAG: ${{ steps.meta.outputs.tag }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Ryu $TAG"
-          git push origin "$TAG"
+          echo "tag=${tag:-latest}" >> "$GITHUB_OUTPUT"
+          echo "create_tag=${create_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -98,3 +101,17 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.meta.outputs.tag }}
+
+      # Depois do build, de propósito: se o build falhar, a versão não é
+      # consumida e o próximo merge tenta o mesmo número, em vez de deixar
+      # uma tag apontando para um commit sem imagem.
+      - name: Create release tag
+        if: steps.meta.outputs.create_tag == 'true'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Ryu $TAG"
+          git push origin "$TAG"

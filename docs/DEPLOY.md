@@ -89,18 +89,27 @@ O Ryu cria as tabelas automaticamente no startup. O driver `asyncpg` já está n
 
 ## Publicar uma release
 
-**Automático.** Todo merge na `main` publica uma release. O workflow `release.yml` lê a última tag `v*`, sobe o **último número** (`v0.4.7` → `v0.4.8`), cria a tag e publica a imagem multi-arch como `ghcr.io/renatobardi/ryu:<tag>` e `ghcr.io/renatobardi/ryu:latest`.
+**Automático.** Todo merge na `main` publica uma imagem. O workflow `release.yml` lê a última tag `vX.Y.Z`, sobe o **último número** (`v0.4.7` → `v0.4.8`), builda, publica como `ghcr.io/renatobardi/ryu:<tag>` e `ghcr.io/renatobardi/ryu:latest`, e só então cria a tag no repositório.
 
 Não é preciso fazer nada — nem tag, nem comando. A tag é criada pelo próprio workflow com o `GITHUB_TOKEN`, e tag criada assim não re-dispara workflow (o GitHub bloqueia recursão de propósito), então não há risco de loop.
 
-O último número é um **contador de entregas**: sobe a cada merge, seja uma correção de uma linha ou uma migração inteira. Os dois primeiros números não se movem sozinhos — eles marcam ciclos, e você os move criando uma tag à mão quando um ciclo fecha.
+O último número é um contador: sobe a cada merge, seja uma correção de uma linha ou uma migração inteira. Os dois primeiros ficam parados até alguém criar uma tag à mão.
+
+Duas garantias que valem saber:
+
+- **A tag só nasce se o build passar.** Ela é criada depois da publicação, então um build quebrado não consome o número nem deixa tag apontando para um commit sem imagem.
+- **Publicações são serializadas** (`concurrency`). Dois merges próximos não disputam a mesma versão: o segundo espera e recalcula.
+
+Só tags no formato exato `vX.Y.Z` entram na conta. Uma `v1.0.0-rc1` ou `v0.4.7.1` é ignorada pelo cálculo — sem isso, a aritmética quebraria ou o número andaria para trás.
 
 ### Publicar fora do fluxo
 
 Duas saídas quando você precisa de uma versão específica:
 
-- **Tag à mão** — crie e empurre uma tag `v*`. O workflow a usa como está, sem calcular nada. É como se abre um ciclo novo (`v0.5.0`) ou se marca um marco (`v1.0.0`); a partir dela o contador continua de onde você parou.
-- **Actions → Release → Run workflow** — publica a imagem com o nome que você digitar, a partir da `main`, **sem** criar tag no histórico.
+- **Tag à mão** — crie e empurre uma tag `v*`. O workflow a usa como está, sem calcular nada. É assim que se muda um dos dois primeiros números (`v0.5.0`, `v1.0.0`); a partir dela o contador continua.
+- **Actions → Release → Run workflow** — publica a imagem com o nome que você digitar, a partir do branch ou tag que você escolher, **sem** criar tag no repositório.
+
+Nos dois casos o que se publica é uma imagem e (no fluxo automático) uma tag git. Nenhum dos caminhos cria uma *Release* do GitHub.
 
 ## Troubleshooting
 
