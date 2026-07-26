@@ -104,7 +104,7 @@ def test_inbox_and_usage_use_semantic_vocabulary(env, name, ctx):
 
 
 def test_inbox_severity_uses_status_pill_macro(env):
-    html = env.get_template("inbox/_items.html").render(**_inbox_ctx())
+    html = render(env, "inbox/_items.html", _inbox_ctx())
     assert "bg-sev-action-required-bg" in html
     assert "bg-sev-attention-bg" in html
     assert "bg-sev-info-bg" in html
@@ -117,7 +117,7 @@ def test_inbox_severity_uses_status_pill_macro(env):
 
 
 def test_usage_keeps_number_formatting_and_alignment(env):
-    html = env.get_template("inbox/usage.html").render(**_usage_ctx())
+    html = render(env, "inbox/usage.html", _usage_ctx())
     assert "1,234,567" in html
     assert "89,012" in html
     assert "$12.3456" in html

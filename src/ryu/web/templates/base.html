@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="dark">
+{#
+  O tema vem do cookie ryu_theme, lido aqui no servidor — o atributo já sai
+  correto no primeiro HTML, sem flash e sem script bloqueante no <head>.
+  Só 'dark' é aceito; qualquer outro valor (ou nenhum cookie) cai em claro,
+  que é o :root de app.css. Ver #10 e #30.
+#}
+<html lang="pt-BR" data-theme="{{ 'dark' if request.cookies.get('ryu_theme') == 'dark' else 'light' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
