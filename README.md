@@ -34,6 +34,8 @@
 
 ## Build & Run
 
+Veja o guia completo de deploy em [DEPLOY.md](DEPLOY.md).
+
 ```bash
 docker build -f docker/Dockerfile -t ryu .
 

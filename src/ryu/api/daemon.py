@@ -31,7 +31,6 @@ from ryu.models import (
     Agent,
     AgentRuntime,
     AgentTask,
-    ApiToken,
     Member,
     RuntimeProfile,
     TaskMessage,

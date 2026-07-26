@@ -20,7 +20,6 @@ from ryu.db import get_db
 from ryu.models import ChannelInstallation, GithubInstallation, GithubPullRequest, User, VcsConnection, Workspace
 from ryu.services import integrations as svc
 from ryu.services.auth import current_user
-from ryu.services.crypto import mask_secret
 from ryu.services.workspaces import require_access
 
 router = APIRouter()

@@ -30,7 +30,6 @@ from ryu.models import (
     IssuePullRequest,
     VcsConnection,
     VcsPullRequest,
-    Workspace,
     uid,
 )
 from ryu.realtime.hub import hub

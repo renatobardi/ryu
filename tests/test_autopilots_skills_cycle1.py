@@ -14,7 +14,6 @@ import hmac
 import io
 import json
 import zipfile
-from pathlib import Path
 
 from tests.conftest import login
 

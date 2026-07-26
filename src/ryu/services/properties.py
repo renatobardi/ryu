@@ -16,7 +16,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ryu.models import Issue, IssueProperty, now
+from ryu.models import IssueProperty, now
 from ryu.realtime.hub import hub
 from ryu.services.issues import IssueError, _log, get_issue, issue_to_dict
 

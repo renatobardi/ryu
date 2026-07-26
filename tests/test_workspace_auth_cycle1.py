@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import httpx
-import pytest
 
 from .conftest import DEV_CODE, login
 
