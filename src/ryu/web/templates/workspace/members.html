@@ -11,9 +11,9 @@
   <section>
     <h2 class="text-sm font-medium text-zinc-300 mb-3">Convidar membro</h2>
     <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 flex gap-2 items-center">
-      <input id="invite-email" type="email" placeholder="email@exemplo.com"
+      <input id="invite-email" type="email" placeholder="email@exemplo.com" aria-label="E-mail do convidado"
              class="bg-zinc-950 border border-zinc-800 rounded-md px-3 py-1.5 text-sm flex-1 focus:outline-none focus:border-violet-600">
-      <select id="invite-role" class="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-sm">
+      <select id="invite-role" aria-label="Papel do convidado" class="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1.5 text-sm">
         <option value="member">member</option>
         <option value="admin">admin</option>
       </select>
@@ -33,7 +33,7 @@
           <div class="text-xs text-zinc-500 truncate">{{ u.email }}</div>
         </div>
         {% if is_admin and u.id != user.id %}
-        <select onchange="changeRole('{{ m.id }}', this.value)"
+        <select onchange="changeRole('{{ m.id }}', this.value)" aria-label="Papel do membro"
                 class="bg-zinc-950 border border-zinc-800 rounded-md px-2 py-1 text-xs">
           {% for r in ['owner', 'admin', 'member'] %}
           <option value="{{ r }}" {% if m.role == r %}selected{% endif %}>{{ r }}</option>

@@ -9,7 +9,7 @@
   <aside class="w-72 shrink-0 border-r border-neutral-800 bg-neutral-950 flex flex-col">
     <div class="p-3 border-b border-neutral-800">
       <form method="post" action="/w/{{ workspace.slug }}/chat/new" class="flex gap-2">
-        <select name="agent_id" required
+        <select name="agent_id" required aria-label="Agente para nova conversa"
                 class="flex-1 bg-neutral-900 border border-neutral-700 rounded-md px-2 py-1.5 text-sm text-neutral-200">
           {% for agent in agents %}
           <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.handle }})</option>
@@ -22,7 +22,7 @@
       </form>
       {% if agents %}
       <form method="post" action="/w/{{ workspace.slug }}/chat/pin-agent" class="mt-2 flex gap-2 items-center">
-        <select name="agent_id" required
+        <select name="agent_id" required aria-label="Agente para fixar no chat"
                 class="flex-1 bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1 text-xs text-neutral-400">
           {% for agent in agents %}
           <option value="{{ agent.id }}">{{ agent.name }}</option>
@@ -125,7 +125,7 @@
               hx-target="#chat-messages" hx-swap="innerHTML"
               hx-on::after-request="this.reset()"
               class="flex-1 flex gap-2" id="chat-composer">
-          <input name="content" autocomplete="off" required id="chat-composer-input"
+          <input name="content" autocomplete="off" required id="chat-composer-input" aria-label="Mensagem para o agente"
                  placeholder="Mensagem para o agente…"
                  class="flex-1 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-violet-500" />
           <button type="submit"
