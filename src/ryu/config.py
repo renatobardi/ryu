@@ -39,7 +39,6 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from_email: str | None = None
     smtp_tls: str = ""  # starttls|implicit|smtps|ssl ("" = starttls; porta 465 força implicit)
-    smtp_tls_insecure: bool = False
     smtp_ehlo_name: str | None = None
     resend_api_key: str | None = None
     resend_from_email: str | None = None
