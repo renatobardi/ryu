@@ -1,0 +1,65 @@
+{#
+  Tradução de docs/Ryu Design System/components/app/Sidebar.jsx.
+
+  Estrutura fiel ao JSX: marca, busca + New Issue, nav (children) e rodapé
+  de usuário. O rodapé é UM botão — avatar/iniciais + apelido, sem nome
+  completo, sem e-mail e sem "Sair" visível; o clique abre a subpágina de
+  perfil, onde essas ações moram (Sidebar.prompt.md).
+
+  Callbacks JS do JSX viram passthrough de atributos, como manda a
+  convenção: onSearch -> search_attrs, onProfileClick -> profile_attrs
+  (tipicamente hx-get pra subpágina de perfil).
+
+  GAP DE MODELO (CONTRACTS.md regra 1 — reportar, não editar models.py):
+  o DS especifica `user.nickname` e `user.avatar`, mas `User` em models.py
+  só tem id/email/name. Enquanto não existirem, `nickname` cai em `name` e
+  o avatar sempre renderiza as iniciais. Adicionar os campos é decisão de
+  outra frente.
+
+  A marca segue o JSX (龍 + "Ryu" + tagline). O Sidebar.prompt.md descreve
+  um quadrado índigo com "R" — texto mais antigo que o próprio componente;
+  o JSX é a implementação vigente.
+
+  O id fixo do campo de busca (par com o <label> oculto, que existe pra
+  leitor de tela) assume uma sidebar por página — é o caso do chrome fixo.
+#}
+{% from "_components/core/button.html" import button %}
+
+{% macro sidebar(user=none, search_attrs={}, profile_attrs={}) %}
+<aside class="w-56 shrink-0 flex flex-col border-r border-border-soft bg-surface-chrome">
+
+  <div class="px-4 py-[18px] flex items-center gap-2">
+    <span class="text-[29px] leading-none text-text-primary shrink-0">龍</span>
+    <div class="min-w-0">
+      <div class="text-xl font-extrabold tracking-[-0.03em] leading-none text-text-primary">Ryu</div>
+      <div class="text-2xs text-text-subtle">Agentic issue tracking</div>
+    </div>
+  </div>
+
+  <div class="px-2 pt-3 flex flex-col gap-2">
+    <label for="sidebar-search" class="sr-only">Buscar no workspace</label>
+    <input type="search" id="sidebar-search" placeholder="Search  &#8984;K"
+           class="w-full rounded-lg bg-surface-input border border-border-default text-text-body placeholder:text-text-faint text-xs px-3 py-1 focus:border-border-focus focus:outline-none"
+           {% for k, v in search_attrs.items() %}{{ k }}="{{ v }}" {% endfor %}>
+    {% call button(full=True, size='sm') %}<i data-lucide="plus" class="w-3.5 h-3.5"></i> New Issue{% endcall %}
+  </div>
+
+  <nav class="flex-1 overflow-y-auto px-2 py-3 flex flex-col gap-0.5">
+    {{ caller() }}
+  </nav>
+
+  {% if user %}
+  {% set initials = (user.nickname or user.name or '?').split()[:2] | map('first') | join | upper %}
+  <button type="button"
+          class="m-2 p-2 flex items-center gap-2 text-left rounded-lg bg-transparent hover:bg-surface-hover transition-colors duration-120 cursor-pointer"
+          {% for k, v in profile_attrs.items() %}{{ k }}="{{ v }}" {% endfor %}>
+    {% if user.avatar %}
+      <img src="{{ user.avatar }}" alt="" class="w-7 h-7 rounded-full object-cover shrink-0">
+    {% else %}
+      <div class="w-7 h-7 rounded-full bg-surface-active text-text-secondary text-2xs font-semibold flex items-center justify-center shrink-0">{{ initials }}</div>
+    {% endif %}
+    <span class="text-xs text-text-secondary truncate">{{ user.nickname or user.name }}</span>
+  </button>
+  {% endif %}
+</aside>
+{% endmacro %}

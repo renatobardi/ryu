@@ -1,0 +1,47 @@
+{#
+  Tradução de docs/Ryu Design System/components/data/StatusPill.jsx.
+
+  Os cinco `kind` são exatamente os do DS (StatusPill.d.ts): agent, task,
+  severity, state (on|off — ativo/pausado, NÃO status de issue) e neutral.
+  Status de issue (backlog|todo|in_progress|...) é outro componente:
+  data/StatusDot.jsx, a bolinha colorida — não cabe aqui.
+
+  O rótulo padrão é o valor cru do backend, minúsculo, sem tradução
+  ('working', 'completed'). O `{% call %}` sobrepõe esse rótulo quando o
+  estado crú não é apresentável — é o que o próprio StatusPill.prompt.md
+  faz com `<StatusPill kind="state" status="on">ativo</StatusPill>`.
+
+  Cada par bg/fg é um token já translúcido; não aplique opacidade Tailwind
+  (`bg-x/15`) por cima — o modificador não funciona sobre `var()` simples.
+#}
+{% macro status_pill(kind='task', status='') %}
+  {% set pills = {
+    'agent': {
+      'idle':      'bg-agent-idle-bg text-agent-idle-fg',
+      'working':   'bg-agent-working-bg text-agent-working-fg',
+      'blocked':   'bg-agent-blocked-bg text-agent-blocked-fg',
+      'error':     'bg-agent-error-bg text-agent-error-fg',
+      'offline':   'bg-agent-offline-bg text-agent-offline-fg',
+    },
+    'task': {
+      'queued':     'bg-task-queued-bg text-task-queued-fg',
+      'dispatched': 'bg-task-dispatched-bg text-task-dispatched-fg',
+      'running':    'bg-task-running-bg text-task-running-fg',
+      'completed':  'bg-task-completed-bg text-task-completed-fg',
+      'failed':     'bg-task-failed-bg text-task-failed-fg',
+      'cancelled':  'bg-task-cancelled-bg text-task-cancelled-fg',
+    },
+    'severity': {
+      'action_required': 'bg-sev-action-required-bg text-sev-action-required-fg',
+      'attention':       'bg-sev-attention-bg text-sev-attention-fg',
+      'info':            'bg-sev-info-bg text-sev-info-fg',
+    },
+    'state': {
+      'on':  'bg-state-on-bg text-state-on-fg',
+      'off': 'bg-state-off-bg text-state-off-fg',
+    },
+  } %}
+  {% set classes = pills.get(kind, {}).get(status, 'bg-surface-active text-text-muted') %}
+  <span class="inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-2xs font-medium {{ classes }}"
+  >{{ caller() if caller is defined else status }}</span>
+{% endmacro %}

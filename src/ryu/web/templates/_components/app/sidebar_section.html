@@ -1,0 +1,11 @@
+{#
+  Tradução do segundo export de docs/Ryu Design System/components/app/Sidebar.jsx
+  (`SidebarSection`). Um arquivo JSX com N exports vira N arquivos Jinja —
+  a regra "uma macro por arquivo" vale mesmo quando a origem agrupa.
+
+  Rótulo de grupo da nav: 10px, uppercase, tracking largo. Os grupos são
+  (sem título) · WORKSPACE · CONFIGURE (Sidebar.prompt.md).
+#}
+{% macro sidebar_section() %}
+  <div class="px-3 pt-3 pb-1 text-2xs uppercase tracking-wider text-text-faint">{{ caller() }}</div>
+{% endmacro %}
