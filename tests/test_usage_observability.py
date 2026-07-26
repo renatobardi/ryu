@@ -134,7 +134,7 @@ async def test_dashboard_usage_and_runtime_endpoints(client):
     r = await client.get("/api/dashboard/runtime/daily", params={"workspace_id": ws_id})
     assert r.status_code == 200
 
-    r = await client.get(f"/api/dashboard/runtimes/echo-fallback/usage", params={"workspace_id": ws_id})
+    r = await client.get("/api/dashboard/runtimes/echo-fallback/usage", params={"workspace_id": ws_id})
     assert r.status_code == 200
 
     r = await client.get("/api/dashboard/agent-activity-30d", params={"workspace_id": ws_id})
