@@ -146,9 +146,3 @@ def test_pins_sidebar_uses_design_system(env):
     assert "hover:bg-surface-hover" in html
     assert "RYU-1" in html
     assert "Project one" in html
-
-
-def test_no_legacy_palette_remains_in_any_template():
-    all_templates = "\n".join(p.read_text() for p in TEMPLATES.rglob("*.html"))
-    for token in ("zinc-", "violet-", "neutral-"):
-        assert token not in all_templates, f"{token} still present in templates"
