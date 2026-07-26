@@ -4,44 +4,44 @@
 <div class="min-h-full flex items-center justify-center px-4">
   <div class="w-full max-w-sm">
     <div class="flex items-center gap-3 mb-8 justify-center">
-      <div class="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center text-white text-lg font-bold">R</div>
+      <div class="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-text-on-accent text-lg font-bold">R</div>
       <div>
-        <div class="text-xl font-semibold text-zinc-100">Ryu</div>
-        <div class="text-xs text-zinc-500">issue tracker com agentes de IA</div>
+        <div class="text-xl font-semibold text-text-primary">Ryu</div>
+        <div class="text-xs text-text-subtle">issue tracker com agentes de IA</div>
       </div>
     </div>
 
-    <div class="bg-[#111116] border border-zinc-800 rounded-xl p-6">
+    <div class="bg-surface-card border border-border-default rounded-xl p-6">
       <!-- Passo 1: e-mail -->
       <form id="email-form" class="space-y-3">
-        <label class="block text-sm text-zinc-400">E-mail</label>
+        <label class="block text-sm text-text-muted">E-mail</label>
         <input id="email" name="email" type="email" required autofocus
                placeholder="voce@empresa.com"
-               class="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-violet-500">
+               class="w-full bg-surface-input border border-border-strong rounded-md px-3 py-2 text-sm text-text-primary placeholder-text-faint focus:outline-none focus:border-border-focus">
         <button type="submit"
-                class="w-full bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-md px-3 py-2">
+                class="w-full bg-accent hover:bg-accent-hover text-text-on-accent text-sm font-medium rounded-md px-3 py-2">
           Enviar código
         </button>
       </form>
 
       <!-- Passo 2: código -->
       <form id="code-form" class="space-y-3 hidden">
-        <p class="text-sm text-zinc-400">Enviamos um código de 6 dígitos para
-          <span id="email-echo" class="text-zinc-200 font-medium"></span>.
-          <span class="text-zinc-500">(em dev, veja o log do servidor)</span>
+        <p class="text-sm text-text-muted">Enviamos um código de 6 dígitos para
+          <span id="email-echo" class="text-text-body font-medium"></span>.
+          <span class="text-text-subtle">(em dev, veja o log do servidor)</span>
         </p>
         <input id="code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required
                placeholder="000000"
-               class="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-center tracking-[0.5em] text-lg text-zinc-100 placeholder-zinc-700 focus:outline-none focus:border-violet-500">
+               class="w-full bg-surface-input border border-border-strong rounded-md px-3 py-2 text-center tracking-code text-lg text-text-primary placeholder-text-faint focus:outline-none focus:border-border-focus">
         <button type="submit"
-                class="w-full bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-md px-3 py-2">
+                class="w-full bg-accent hover:bg-accent-hover text-text-on-accent text-sm font-medium rounded-md px-3 py-2">
           Entrar
         </button>
         <button type="button" id="back-btn"
-                class="w-full text-zinc-500 hover:text-zinc-300 text-xs">usar outro e-mail</button>
+                class="w-full text-text-subtle hover:text-text-body text-xs">usar outro e-mail</button>
       </form>
 
-      <p id="login-error" class="hidden mt-3 text-sm text-red-400"></p>
+      <p id="login-error" class="hidden mt-3 text-sm text-danger-fg"></p>
     </div>
   </div>
 </div>

@@ -1,26 +1,27 @@
 {% extends "base.html" %}
+{% from "_components/data/status_pill.html" import status_pill %}
 {% block title %}{{ project.name }} — {{ workspace.name }}{% endblock %}
 {% block content %}
-<div class="px-6 py-4 border-b border-zinc-800">
-  <a href="/w/{{ workspace.slug }}/projects" class="text-xs text-zinc-500 hover:text-zinc-300">← Projects</a>
+<div class="px-6 py-4 border-b border-border-default">
+  <a href="/w/{{ workspace.slug }}/projects" class="text-xs text-text-subtle hover:text-text-body">← Projects</a>
   <div class="flex items-center gap-2 mt-1">
-    <h1 class="text-lg font-semibold text-zinc-100">{{ project.name }}</h1>
-    <span class="text-[10px] px-1.5 py-0.5 rounded-full {% if project.status == 'active' %}bg-emerald-600/20 text-emerald-400{% else %}bg-zinc-700/40 text-zinc-400{% endif %}">{{ project.status }}</span>
+    <h1 class="text-lg font-semibold text-text-primary">{{ project.name }}</h1>
+    {% call status_pill(kind='state', status='on' if project.status == 'active' else 'off') %}{{ project.status }}{% endcall %}
   </div>
-  {% if project.description %}<p class="text-sm text-zinc-400 mt-1">{{ project.description }}</p>{% endif %}
+  {% if project.description %}<p class="text-sm text-text-muted mt-1">{{ project.description }}</p>{% endif %}
 </div>
 
 <div class="px-6 py-4">
-  <h2 class="text-sm font-medium text-zinc-300 mb-2">Issues ({{ issues|length }})</h2>
-  <div class="divide-y divide-zinc-800/60 border border-zinc-800 rounded-lg bg-zinc-900">
+  <h2 class="text-sm font-medium text-text-secondary mb-2">Issues ({{ issues|length }})</h2>
+  <div class="bg-surface-card border border-border-default rounded-lg divide-y divide-border-hairline">
     {% for i in issues %}
-    <a href="/w/{{ workspace.slug }}/issues/{{ i.key }}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-800/40">
-      <span class="text-xs text-zinc-500 w-20 shrink-0">{{ i.key }}</span>
-      <span class="text-sm text-zinc-200 flex-1 truncate">{{ i.title }}</span>
-      <span class="text-[10px] text-zinc-400 bg-zinc-800 rounded px-1.5 py-0.5">{{ status_titles.get(i.status, i.status) }}</span>
+    <a href="/w/{{ workspace.slug }}/issues/{{ i.key }}" class="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-hover">
+      <span class="text-xs text-text-subtle w-20 shrink-0">{{ i.key }}</span>
+      <span class="text-sm text-text-body flex-1 truncate">{{ i.title }}</span>
+      <span class="bg-surface-active text-text-muted text-2xs rounded px-1.5 py-0.5">{{ status_titles.get(i.status, i.status) }}</span>
     </a>
     {% else %}
-    <p class="px-4 py-6 text-sm text-zinc-500 text-center">Nenhuma issue neste projeto.</p>
+    <p class="px-4 py-6 text-sm text-text-subtle text-center">Nenhuma issue neste projeto.</p>
     {% endfor %}
   </div>
 </div>
