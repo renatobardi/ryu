@@ -73,8 +73,8 @@ def test_app_css_has_light_and_dark_custom_properties(app_css):
 
 
 def test_app_css_has_no_legacy_ryu_classes(app_css):
-    # Após migrar os 5 call sites de dashboard.html/agents/index.html,
-    # as classes .ryu-* tornaram-se código morto e foram removidas do app.css.
+    # After migrating the 5 call sites in dashboard.html and agents/index.html,
+    # the .ryu-* classes became dead code and were removed from app.css.
     legacy = [
         ".ryu-status-",
         ".ryu-agent-",
@@ -206,7 +206,7 @@ def _dashboard_ctx():
 def test_dashboard_uses_semantic_vocabulary():
     html = _render("dashboard.html", _dashboard_ctx())
     _assert_no_legacy_status_palette(html, "dashboard.html")
-    # Status macros produzem classes semânticas com mapa explícito.
+    # Status macros render explicit semantic classes.
     assert "bg-status-in-progress" in html
     assert "bg-agent-working-bg text-agent-working-fg" in html
     assert "bg-task-running-bg text-task-running-fg" in html
