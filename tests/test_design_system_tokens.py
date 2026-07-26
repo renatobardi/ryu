@@ -1,4 +1,4 @@
-"""Design system token expand (#19) and sidebar/topbar migration (#21)."""
+"""Design system token expand (#19), sidebar/topbar migration (#21), dashboard/agents migration (#22) and .ryu-* removal (#29)."""
 from __future__ import annotations
 
 import datetime
@@ -109,16 +109,7 @@ def test_pins_sidebar_uses_design_system():
 
 def test_sidebar_topbar_uses_lucide_and_no_visible_logout():
     # Ícones de navegação via Lucide; nenhum "Sair" visível na sidebar.
-    from jinja2 import Environment, FileSystemLoader, select_autoescape
-
-    env = Environment(
-        loader=FileSystemLoader(str(TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
-    )
-    html = env.get_template("base.html").render(
-        workspace={"slug": "ws", "id": "ws-1"},
-        user={"name": "Dev", "email": "dev@example.com"},
-    )
+    html = _render("base.html", {"workspace": {"slug": "ws", "id": "ws-1"}, "user": {"name": "Dev", "email": "dev@example.com"}})
     assert "data-lucide" in html
     assert 'data-lucide="inbox"' in html
     assert 'data-lucide="bot"' in html
@@ -144,6 +135,17 @@ def _render(template_name: str, ctx: dict) -> str:
         autoescape=select_autoescape(["html"]),
     )
     return env.get_template(template_name).render(**ctx)
+
+
+_LEGACY_TOKENS = ("zinc-", "violet-", "ryu-status-", "ryu-agent-", "ryu-task-", "#111116")
+_LEGACY_OPACITY = ("bg-amber-500/15", "bg-red-500/15", "bg-emerald-500/15", "bg-zinc-700/40")
+
+
+def _assert_no_legacy_status_palette(html: str, label: str) -> None:
+    for token in _LEGACY_TOKENS:
+        assert token not in html, f"{token} found in {label}"
+    for cls in _LEGACY_OPACITY:
+        assert cls not in html, f"{cls} found in {label}"
 
 
 _STATUS_TITLES = {
@@ -203,29 +205,17 @@ def _dashboard_ctx():
 
 def test_dashboard_uses_semantic_vocabulary():
     html = _render("dashboard.html", _dashboard_ctx())
-    for token in ("zinc-", "violet-", "ryu-status-", "ryu-agent-", "ryu-task-", "#111116"):
-        assert token not in html, f"{token} found in dashboard.html"
+    _assert_no_legacy_status_palette(html, "dashboard.html")
     # Status macros produzem classes semânticas com mapa explícito.
     assert "bg-status-in-progress" in html
     assert "bg-agent-working-bg text-agent-working-fg" in html
     assert "bg-task-running-bg text-task-running-fg" in html
-    # Sem interpolação de cor de estado.
-    assert "bg-amber-500/15" not in html
-    assert "bg-red-500/15" not in html
-    assert "bg-emerald-500/15" not in html
-    assert "bg-zinc-700/40" not in html
 
 
 def test_agents_index_uses_semantic_vocabulary():
     html = _render("agents/index.html", _agents_ctx())
-    for token in ("zinc-", "violet-", "ryu-status-", "ryu-agent-", "ryu-task-", "#111116"):
-        assert token not in html, f"{token} found in agents/index.html"
+    _assert_no_legacy_status_palette(html, "agents/index.html")
     assert "bg-agent-working-bg text-agent-working-fg" in html
     assert "bg-agent-idle-bg text-agent-idle-fg" in html
     assert "bg-task-running-bg text-task-running-fg" in html
     assert "bg-task-completed-bg text-task-completed-fg" in html
-    # Sem interpolação de cor de estado.
-    assert "bg-amber-500/15" not in html
-    assert "bg-red-500/15" not in html
-    assert "bg-emerald-500/15" not in html
-    assert "bg-zinc-700/40" not in html
