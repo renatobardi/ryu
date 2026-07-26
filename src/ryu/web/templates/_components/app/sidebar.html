@@ -1,0 +1,42 @@
+{#
+  Tradução de docs/Ryu Design System/components/app/Sidebar.jsx.
+  children (slot único de NavItems no JSX) vira {% call %} — Jinja só
+  suporta um caller por macro, o que já bate 1:1 com o slot único do JSX.
+  onProfileClick (callback JS) vira <details>/<summary> nativo — sem JS,
+  clique revela as ações (Sair) em vez de handler. Regra geral do mapa:
+  DS manda — rodapé mostra só avatar+apelido, não nome completo/e-mail
+  (diferente do base.html atual, que mostra os dois; correção é execução,
+  fora deste mapa). Cores ilustrativas — ver nota em core/button.html.
+#}
+{% macro sidebar(workspace, user=none) %}
+<aside class="w-56 shrink-0 flex flex-col border-r border-zinc-800/70 bg-[#0e0e13]">
+  <div class="px-4 py-4 flex items-center gap-2 border-b border-zinc-800/70">
+    <div class="w-6 h-6 rounded-md bg-cyan-600 flex items-center justify-center text-white text-xs font-bold">R</div>
+    <div class="min-w-0">
+      <div class="text-sm font-semibold text-zinc-100 truncate">{{ workspace.name }}</div>
+      <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Ryu</div>
+    </div>
+  </div>
+
+  <nav class="flex-1 px-2 pt-3 space-y-0.5 overflow-y-auto">
+    {{ caller() }}
+  </nav>
+
+  {% if user %}
+  {% set initials = ((user.nickname or user.name or '').split(' ')[:2] | map('first') | join('')) | upper %}
+  <details class="border-t border-zinc-800/70">
+    <summary class="px-4 py-3 flex items-center gap-2 cursor-pointer list-none hover:bg-zinc-800/40">
+      {% if user.avatar %}
+        <img src="{{ user.avatar }}" class="w-6 h-6 rounded-full shrink-0" alt="">
+      {% else %}
+        <div class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-300 text-[10px] flex items-center justify-center shrink-0">{{ initials }}</div>
+      {% endif %}
+      <span class="text-xs text-zinc-300 truncate">{{ user.nickname or user.name }}</span>
+    </summary>
+    <div class="px-4 pb-3">
+      <button onclick="ryuLogout()" class="text-zinc-500 hover:text-zinc-200 text-xs">Sair</button>
+    </div>
+  </details>
+  {% endif %}
+</aside>
+{% endmacro %}

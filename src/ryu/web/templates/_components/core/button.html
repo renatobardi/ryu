@@ -1,0 +1,26 @@
+{#
+  Tradução de docs/Ryu Design System/components/core/Button.jsx.
+  Cores abaixo são ilustrativas (zinc-*/cyan-600 do codebase atual) — nomes
+  finais dependem de #12 (reconciliar vocabulário órfão) e #13 (mapeamento
+  pro tailwind.config). variant='link'/'danger' usam texto sem padding (bare),
+  como no JSX original. hover é Tailwind `hover:` nativo — o JSX simula hover
+  via onMouseEnter/onMouseLeave porque usa style inline; aqui não precisa.
+#}
+{% macro button(variant='primary', size='md', disabled=False, full=False, attrs={}) %}
+  {% set base = 'inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors' %}
+  {% set sizes = {'sm': 'text-xs px-2.5 py-1', 'md': 'text-xs px-3 py-1.5', 'lg': 'text-sm px-4 py-2'} %}
+  {% set bare = variant in ('link', 'danger') %}
+  {% set variants = {
+    'primary': 'bg-cyan-600 hover:bg-cyan-500 text-white',
+    'secondary': 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100',
+    'outline': 'border border-zinc-700 hover:border-zinc-600 text-zinc-200',
+    'ghost': 'hover:bg-zinc-800/50 text-zinc-300',
+    'link': 'text-cyan-400 hover:text-cyan-300 underline-offset-2 hover:underline',
+    'danger': 'text-red-400 hover:text-red-300',
+  } %}
+  <button
+    class="{{ base }} {{ variants[variant] }} {{ 'w-full' if full }} {{ 'text-xs' if bare else sizes[size] }} {{ 'opacity-45 cursor-not-allowed' if disabled }}"
+    {{ 'disabled' if disabled }}
+    {% for k, v in attrs.items() %}{{ k }}="{{ v }}" {% endfor %}
+  >{{ caller() }}</button>
+{% endmacro %}
