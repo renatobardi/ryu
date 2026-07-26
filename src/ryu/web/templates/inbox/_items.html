@@ -1,10 +1,21 @@
 {% from "_components/data/status_pill.html" import status_pill %}
+{# A cor da bolinha sai de mapa explícito: os enums vêm com underscore
+   (action_required) e os tokens com hífen, então colar o valor cru num
+   prefixo geraria classe inexistente (tailwind-config-mapping.md §4). #}
+{% set severity_dots = {
+  'action_required': 'bg-sev-action-required-fg',
+  'attention':       'bg-sev-attention-fg',
+  'info':            'bg-sev-info-fg',
+} %}
 <div id="inbox-items" class="divide-y divide-border-hairline">
   {% if not items %}
   <div class="px-6 py-12 text-center text-sm text-text-faint">Inbox vazia. Nada por aqui.</div>
   {% endif %}
   {% for item in items %}
   <div class="flex items-start gap-3 px-6 py-4 {% if not item.read %}bg-surface-sunken{% endif %}">
+    {# decorativa: a pill ao lado do título já nomeia a severidade #}
+    <span class="mt-1 h-2 w-2 rounded-full shrink-0 {{ severity_dots.get(item.severity, 'bg-sev-info-fg') }}"
+          aria-hidden="true"></span>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2">
         <span class="text-sm {% if item.read %}text-text-muted{% else %}text-text-primary font-medium{% endif %}">{{ item.title }}</span>
