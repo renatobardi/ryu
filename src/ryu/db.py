@@ -1,7 +1,14 @@
+import structlog
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from .config import settings
+
+log = structlog.get_logger("ryu.db")
+
+# Erros de ALTER TABLE que significam "a coluna já está lá" (sqlite/postgres):
+# são o caso normal de re-execução, não falha.
+_ALREADY_APPLIED = ("duplicate column", "already exists")
 
 
 class Base(DeclarativeBase):
@@ -17,6 +24,20 @@ async def get_db():
         yield session
 
 
+async def apply_light_migrations(ddls: list[str]) -> None:
+    """Aplica ALTER TABLEs idempotentes; erro que não seja 'coluna já existe' vira log."""
+    from sqlalchemy import text
+
+    for ddl in ddls:
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text(ddl))
+        except Exception as exc:  # noqa: BLE001
+            message = str(exc).lower()
+            if not any(marker in message for marker in _ALREADY_APPLIED):
+                log.warning("light_migration_failed", ddl=ddl, error=str(exc)[:300])
+
+
 async def init_db() -> None:
     from . import models  # noqa: F401  (registra todas as tabelas)
 
@@ -24,8 +45,6 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
     # Migração leve p/ DBs existentes (create_all não altera tabelas já criadas)
-    from sqlalchemy import text
-
     _light_migrations = [
         "ALTER TABLE issue ADD COLUMN project_id VARCHAR",
         "ALTER TABLE issue ADD COLUMN properties JSON",
@@ -103,9 +122,4 @@ async def init_db() -> None:
         "ALTER TABLE task_usage ADD COLUMN runtime VARCHAR DEFAULT ''",
         "ALTER TABLE task_usage ADD COLUMN costed BOOLEAN DEFAULT 1",
     ]
-    for ddl in _light_migrations:
-        try:
-            async with engine.begin() as conn:
-                await conn.execute(text(ddl))
-        except Exception:
-            pass  # coluna já existe
+    await apply_light_migrations(_light_migrations)
