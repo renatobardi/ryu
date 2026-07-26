@@ -25,7 +25,7 @@
       {% if agents %}
       <form hx-post="/w/{{ workspace.slug }}/squads/{{ s.id }}/members" hx-target="#squads-list" hx-swap="outerHTML"
             class="inline-flex items-center gap-1">
-        <select name="agent_id" class="bg-surface-input border border-border-strong rounded text-xs text-text-secondary px-2 py-1">
+        <select name="agent_id" aria-label="Agente a adicionar à squad" class="bg-surface-input border border-border-strong rounded text-xs text-text-secondary px-2 py-1">
           {% for a in agents %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
         </select>
         <input name="role" placeholder="papel" aria-label="Papel do agente na squad"
@@ -52,7 +52,7 @@
     {% if issues %}
     <form hx-post="/w/{{ workspace.slug }}/squads/{{ s.id }}/assign" hx-target="#squads-list" hx-swap="outerHTML"
           class="mt-3 flex items-center gap-2">
-      <select name="issue_id" class="bg-surface-input border border-border-strong rounded text-xs text-text-secondary px-2 py-1 max-w-xs">
+      <select name="issue_id" aria-label="Issue a atribuir à squad" class="bg-surface-input border border-border-strong rounded text-xs text-text-secondary px-2 py-1 max-w-xs">
         {% for i in issues %}<option value="{{ i.id }}">{{ i.key }} — {{ i.title[:60] }}</option>{% endfor %}
       </select>
       {% call button(variant='secondary', size='sm', type='submit') %}Atribuir issue à squad{% endcall %}

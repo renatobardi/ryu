@@ -26,7 +26,7 @@
       {% if agents %}
       <form hx-post="/w/{{ workspace.slug }}/skills/{{ s.id }}/attach" hx-target="#skills-list" hx-swap="outerHTML"
             class="inline-flex items-center gap-1">
-        <select name="agent_id" class="bg-surface-input border border-border-strong rounded text-xs text-text-secondary px-2 py-1">
+        <select name="agent_id" aria-label="Agente a anexar a esta skill" class="bg-surface-input border border-border-strong rounded text-xs text-text-secondary px-2 py-1">
           {% for a in agents %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
         </select>
         <button class="text-text-accent hover:text-accent-hover text-xs">+ agente</button>
