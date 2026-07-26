@@ -2,22 +2,10 @@
 from __future__ import annotations
 
 import datetime
-from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-
-REPO = Path(__file__).resolve().parents[1]
-TEMPLATES = REPO / "src/ryu/web/templates"
-
-
-@pytest.fixture(scope="module")
-def env():
-    return Environment(
-        loader=FileSystemLoader(str(TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
-    )
+from types import SimpleNamespace
+from .conftest import TEMPLATES, assert_no_legacy_vocabulary, render  # noqa: F401
 
 
 _COMMON_CTX = {
@@ -25,7 +13,6 @@ _COMMON_CTX = {
     "user": {"name": "Dev", "email": "dev@example.com"},
 }
 
-_LEGACY_TOKENS = ("zinc-", "violet-", "ryu-status-", "ryu-agent-", "ryu-task-", "#111116")
 
 
 NOW = datetime.datetime.now()
@@ -113,9 +100,7 @@ def _usage_ctx():
     ("inbox/usage.html", _usage_ctx()),
 ])
 def test_inbox_and_usage_use_semantic_vocabulary(env, name, ctx):
-    html = env.get_template(name).render(**ctx)
-    for token in _LEGACY_TOKENS:
-        assert token not in html, f"{token} found in {name}"
+    assert_no_legacy_vocabulary(render(env, name, ctx), name)
 
 
 def test_inbox_severity_uses_status_pill_macro(env):

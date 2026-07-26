@@ -232,7 +232,7 @@ async function ryuLogout() {
 
     ws.onopen = () => {
       retryMs = 1000;
-      if (dot) { dot.classList.remove('text-text-faint', 'text-red-500'); dot.classList.add('text-emerald-500'); }
+      if (dot) { dot.classList.remove('text-text-faint', 'text-danger-fg'); dot.classList.add('text-success-fg'); }
     };
 
     ws.onmessage = (msg) => {
@@ -253,7 +253,7 @@ async function ryuLogout() {
     };
 
     ws.onclose = () => {
-      if (dot) { dot.classList.remove('text-emerald-500'); dot.classList.add('text-red-500'); }
+      if (dot) { dot.classList.remove('text-success-fg'); dot.classList.add('text-danger-fg'); }
       setTimeout(connect, retryMs);
       retryMs = Math.min(retryMs * 2, 15000);
     };

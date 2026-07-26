@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import json
-
 import httpx
-
+import json
 from .conftest import login
 
 

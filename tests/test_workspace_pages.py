@@ -1,25 +1,9 @@
 """Workspace pages use the semantic design-system vocabulary (#27)."""
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-REPO = Path(__file__).resolve().parents[1]
-TEMPLATES = REPO / "src/ryu/web/templates"
-
-
-@pytest.fixture(scope="module")
-def env():
-    return Environment(
-        loader=FileSystemLoader(str(TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
-    )
-
-
-def _render(env, name, ctx):
-    return env.get_template(name).render(**ctx)
+from .conftest import TEMPLATES, assert_no_legacy_vocabulary, render  # noqa: F401
 
 
 _COMMON_CTX = {
@@ -38,9 +22,6 @@ _STATUS_TITLES = {
 }
 
 
-def _assert_no_legacy_palette(html, source):
-    for token in ("zinc-", "violet-"):
-        assert token not in html, f"{token} found in {source}"
 
 
 def _settings_ctx(saved=False):
@@ -125,20 +106,20 @@ def _my_issues_ctx():
 
 
 def test_settings_uses_semantic_vocabulary(env):
-    html = _render(env, "workspace/settings.html", _settings_ctx(saved=True))
-    _assert_no_legacy_palette(html, "workspace/settings.html")
+    html = render(env, "workspace/settings.html", _settings_ctx(saved=True))
+    assert_no_legacy_vocabulary(html, "workspace/settings.html")
     assert "bg-accent hover:bg-accent-hover text-text-on-accent" in html
     assert "focus:border-border-focus" in html
     assert "Sair (logout)" in html
 
 
 def test_settings_keeps_form_max_width(env):
-    html = _render(env, "workspace/settings.html", _settings_ctx())
+    html = render(env, "workspace/settings.html", _settings_ctx())
     assert "max-w-2xl" in html
 
 
 def test_settings_logout_button_calls_ryuLogout(env):
-    html = _render(env, "workspace/settings.html", _settings_ctx())
+    html = render(env, "workspace/settings.html", _settings_ctx())
     assert 'onclick="ryuLogout()"' in html
 
 
@@ -146,13 +127,13 @@ def test_settings_logout_button_calls_ryuLogout(env):
 
 
 def test_members_uses_semantic_vocabulary(env):
-    html = _render(env, "workspace/members.html", _members_ctx())
-    _assert_no_legacy_palette(html, "workspace/members.html")
+    html = render(env, "workspace/members.html", _members_ctx())
+    assert_no_legacy_vocabulary(html, "workspace/members.html")
     assert "bg-accent hover:bg-accent-hover text-text-on-accent" in html
 
 
 def test_members_invite_form_keeps_max_width(env):
-    html = _render(env, "workspace/members.html", _members_ctx())
+    html = render(env, "workspace/members.html", _members_ctx())
     assert "max-w-3xl" in html
 
 
@@ -160,14 +141,14 @@ def test_members_invite_form_keeps_max_width(env):
 
 
 def test_runtimes_uses_semantic_vocabulary(env):
-    html = _render(env, "workspace/runtimes.html", _runtimes_ctx())
-    _assert_no_legacy_palette(html, "workspace/runtimes.html")
+    html = render(env, "workspace/runtimes.html", _runtimes_ctx())
+    assert_no_legacy_vocabulary(html, "workspace/runtimes.html")
     assert "disponível" in html
     assert "indisponível" in html
 
 
 def test_runtimes_table_keeps_max_width(env):
-    html = _render(env, "workspace/runtimes.html", _runtimes_ctx())
+    html = render(env, "workspace/runtimes.html", _runtimes_ctx())
     assert "max-w-2xl" in html
 
 
@@ -175,23 +156,23 @@ def test_runtimes_table_keeps_max_width(env):
 
 
 def test_search_uses_semantic_vocabulary(env):
-    html = _render(env, "workspace/search.html", _search_ctx(q="issue"))
-    _assert_no_legacy_palette(html, "workspace/search.html")
+    html = render(env, "workspace/search.html", _search_ctx(q="issue"))
+    assert_no_legacy_vocabulary(html, "workspace/search.html")
     assert "focus:border-border-focus" in html
 
 
 def test_search_keeps_input_max_width(env):
-    html = _render(env, "workspace/search.html", _search_ctx())
+    html = render(env, "workspace/search.html", _search_ctx())
     assert "max-w-xl" in html
 
 
 def test_search_results_fragment_uses_semantic_vocabulary(env):
-    html = _render(env, "workspace/_search_results.html", _search_ctx(q="issue"))
-    _assert_no_legacy_palette(html, "workspace/_search_results.html")
+    html = render(env, "workspace/_search_results.html", _search_ctx(q="issue"))
+    assert_no_legacy_vocabulary(html, "workspace/_search_results.html")
 
 
 def test_search_results_fragment_renders_issues_agents_chats(env):
-    html = _render(env, "workspace/_search_results.html", _search_ctx(q="issue"))
+    html = render(env, "workspace/_search_results.html", _search_ctx(q="issue"))
     assert "RYU-1" in html
     assert "First issue" in html
     assert "Coder" in html
@@ -200,7 +181,7 @@ def test_search_results_fragment_renders_issues_agents_chats(env):
 
 
 def test_search_results_fragment_shows_prompt_when_empty(env):
-    html = _render(env, "workspace/_search_results.html", _search_ctx(q=""))
+    html = render(env, "workspace/_search_results.html", _search_ctx(q=""))
     assert "Digite algo para buscar" in html
 
 
@@ -208,14 +189,14 @@ def test_search_results_fragment_shows_prompt_when_empty(env):
 
 
 def test_invite_uses_semantic_vocabulary(env):
-    html = _render(env, "workspace/invite.html", _invite_ctx())
-    _assert_no_legacy_palette(html, "workspace/invite.html")
+    html = render(env, "workspace/invite.html", _invite_ctx())
+    assert_no_legacy_vocabulary(html, "workspace/invite.html")
     assert "bg-accent" in html
 
 
 @pytest.mark.parametrize("status", ["pending", "accepted", "declined"])
 def test_invite_card_keeps_max_width_for_any_status(env, status):
-    html = _render(env, "workspace/invite.html", _invite_ctx(status=status))
+    html = render(env, "workspace/invite.html", _invite_ctx(status=status))
     assert "max-w-md" in html
 
 
@@ -223,8 +204,8 @@ def test_invite_card_keeps_max_width_for_any_status(env, status):
 
 
 def test_my_issues_uses_semantic_vocabulary(env):
-    html = _render(env, "workspace/my_issues.html", _my_issues_ctx())
-    _assert_no_legacy_palette(html, "workspace/my_issues.html")
+    html = render(env, "workspace/my_issues.html", _my_issues_ctx())
+    assert_no_legacy_vocabulary(html, "workspace/my_issues.html")
     assert "RYU-1" in html
     assert "Task for me" in html
 
@@ -233,7 +214,7 @@ def test_my_issues_renders_empty_state(env):
     ctx = _my_issues_ctx()
     ctx["grouped"] = {st: [] for st in _STATUS_TITLES}
     ctx["total"] = 0
-    html = _render(env, "workspace/my_issues.html", ctx)
+    html = render(env, "workspace/my_issues.html", ctx)
     assert "Nenhuma issue atribuída" in html
 
 

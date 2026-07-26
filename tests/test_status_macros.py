@@ -7,22 +7,17 @@ non-existent class silently) is a static property of the source.
 """
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-REPO = Path(__file__).resolve().parents[1]
-TEMPLATES = REPO / "src/ryu/web/templates"
+from .conftest import TEMPLATES
+
+
 COMPONENTS = TEMPLATES / "_components"
 
 
-@pytest.fixture(scope="module")
-def env():
-    return Environment(
-        loader=FileSystemLoader(str(TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
-    )
+def render(env, src):
+    """Renderiza um snippet inline — aqui os macros são exercitados isolados."""
+    return env.from_string(src).render()
 
 
 # CONTRACTS.md rule 9 — issue status enum.
@@ -35,8 +30,6 @@ SEVERITY_STATUSES = ["action_required", "attention", "info"]
 STATE_STATUSES = ["on", "off"]
 
 
-def _render(env, src):
-    return env.from_string(src).render()
 
 
 # ── status_dot ──────────────────────────────────────────────────────────────
@@ -48,7 +41,7 @@ def test_status_dot_macro_exists():
 
 @pytest.mark.parametrize("status", ISSUE_STATUSES)
 def test_status_dot_resolves_every_issue_status_to_real_class(env, status):
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_dot.html" import status_dot %}'
         f'{{{{ status_dot(status="{status}") }}}}',
@@ -63,7 +56,7 @@ def test_status_dot_default_label_is_raw_status_visible(env):
     # Without a caller, the raw backend value renders as the visible
     # default label beside the dot (AC #4: "rótulo padrão é o valor cru
     # do backend, minúsculo"). The dot also carries aria-label for AT.
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_dot.html" import status_dot %}'
         '{{ status_dot(status="in_progress") }}',
@@ -77,7 +70,7 @@ def test_status_dot_default_label_is_raw_status_visible(env):
 def test_status_dot_call_slot_overrides_default_label(env):
     # With a caller, the slot content overrides the raw default label —
     # the override for when the raw value isn't presentable.
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_dot.html" import status_dot %}'
         '{% call status_dot(status="done") %}Done{% endcall %}',
@@ -109,7 +102,7 @@ def test_status_dot_source_has_no_class_interpolation():
 
 @pytest.mark.parametrize("status", TASK_STATUSES)
 def test_status_pill_task_resolves_every_task_status(env, status):
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_pill.html" import status_pill %}'
         f'{{{{ status_pill(kind="task", status="{status}") }}}}',
@@ -120,7 +113,7 @@ def test_status_pill_task_resolves_every_task_status(env, status):
 
 @pytest.mark.parametrize("status", AGENT_STATUSES)
 def test_status_pill_agent_resolves_every_agent_status(env, status):
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_pill.html" import status_pill %}'
         f'{{{{ status_pill(kind="agent", status="{status}") }}}}',
@@ -130,7 +123,7 @@ def test_status_pill_agent_resolves_every_agent_status(env, status):
 
 @pytest.mark.parametrize("status", SEVERITY_STATUSES)
 def test_status_pill_severity_resolves_every_severity(env, status):
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_pill.html" import status_pill %}'
         f'{{{{ status_pill(kind="severity", status="{status}") }}}}',
@@ -141,7 +134,7 @@ def test_status_pill_severity_resolves_every_severity(env, status):
 
 @pytest.mark.parametrize("status", STATE_STATUSES)
 def test_status_pill_state_resolves_every_state(env, status):
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_pill.html" import status_pill %}'
         f'{{{{ status_pill(kind="state", status="{status}") }}}}',
@@ -150,7 +143,7 @@ def test_status_pill_state_resolves_every_state(env, status):
 
 
 def test_status_pill_default_label_is_raw_status_lowercase(env):
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_pill.html" import status_pill %}'
         '{{ status_pill(kind="task", status="running") }}',
@@ -159,7 +152,7 @@ def test_status_pill_default_label_is_raw_status_lowercase(env):
 
 
 def test_status_pill_call_slot_overrides_label(env):
-    html = _render(
+    html = render(
         env,
         '{% from "_components/data/status_pill.html" import status_pill %}'
         '{% call status_pill(kind="state", status="on") %}ativo{% endcall %}',

@@ -1,25 +1,9 @@
 """Automation templates (#26): autopilots, skills and squads use the semantic vocabulary."""
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-REPO = Path(__file__).resolve().parents[1]
-TEMPLATES = REPO / "src/ryu/web/templates"
-
-
-@pytest.fixture(scope="module")
-def env():
-    return Environment(
-        loader=FileSystemLoader(str(TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
-    )
-
-
-def _render(env, name, ctx):
-    return env.get_template(name).render(**ctx)
+from .conftest import TEMPLATES, assert_no_legacy_vocabulary, render  # noqa: F401
 
 
 _COMMON = {"workspace": {"slug": "ws", "id": "ws-1", "name": "Workspace"}}
@@ -107,13 +91,13 @@ def _squads_ctx():
     ],
 )
 def test_automation_template_has_no_legacy_palette_classes(env, name, ctx):
-    html = _render(env, name, ctx)
+    html = render(env, name, ctx)
     for token in ("zinc-", "violet-"):
         assert token not in html, f"{token} found in {name}"
 
 
 def test_autopilot_state_uses_status_pill_macro_with_slot(env):
-    html = _render(env, "automation/_autopilots_list.html", _autopilots_ctx())
+    html = render(env, "automation/_autopilots_list.html", _autopilots_ctx())
     assert "bg-state-on-bg text-state-on-fg" in html
     assert "bg-state-off-bg text-state-off-fg" in html
     assert "ativo" in html
@@ -121,12 +105,12 @@ def test_autopilot_state_uses_status_pill_macro_with_slot(env):
 
 
 def test_autopilot_cron_expr_stays_monospaced(env):
-    html = _render(env, "automation/_autopilots_list.html", _autopilots_ctx())
+    html = render(env, "automation/_autopilots_list.html", _autopilots_ctx())
     assert "0 9 * * 1-5" in html
     assert "font-mono" in html
 
 
 def test_automation_forms_use_semantic_button(env):
     for name in ("automation/autopilots.html", "automation/skills.html", "automation/squads.html"):
-        html = _render(env, name, _autopilots_ctx() if "autopilot" in name else _skills_ctx() if "skill" in name else _squads_ctx())
+        html = render(env, name, _autopilots_ctx() if "autopilot" in name else _skills_ctx() if "skill" in name else _squads_ctx())
         assert "bg-accent hover:bg-accent-hover text-text-on-accent" in html, f"primary button semantic classes missing in {name}"
