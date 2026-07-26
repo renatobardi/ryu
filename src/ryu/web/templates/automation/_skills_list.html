@@ -1,39 +1,39 @@
 <div id="skills-list" class="space-y-3">
   {% for s in skills %}
-  <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+  <div class="bg-surface-card border border-border-default rounded-lg p-4">
     <div class="flex items-start justify-between">
       <div>
-        <div class="text-zinc-100 font-medium">{{ s.name }}</div>
-        {% if s.description %}<div class="text-zinc-400 text-sm">{{ s.description }}</div>{% endif %}
+        <div class="text-text-primary font-medium">{{ s.name }}</div>
+        {% if s.description %}<div class="text-text-muted text-sm">{{ s.description }}</div>{% endif %}
       </div>
       <form hx-post="/w/{{ workspace.slug }}/skills/{{ s.id }}/delete" hx-target="#skills-list" hx-swap="outerHTML">
-        <button class="text-zinc-500 hover:text-red-400 text-xs">excluir</button>
+        <button class="text-text-subtle hover:text-red-400 text-xs">excluir</button>
       </form>
     </div>
     {% if s.content %}
-    <pre class="mt-2 text-xs text-zinc-400 bg-zinc-950 border border-zinc-800 rounded p-2 overflow-x-auto max-h-40">{{ s.content }}</pre>
+    <pre class="mt-2 text-xs text-text-muted bg-surface-sunken border border-border-default rounded p-2 overflow-x-auto max-h-40">{{ s.content }}</pre>
     {% endif %}
     <div class="mt-3 flex flex-wrap items-center gap-2">
       {% for a in attached.get(s.id, []) %}
-      <span class="inline-flex items-center gap-1 bg-zinc-800 text-zinc-300 text-xs rounded-full px-2 py-0.5">
+      <span class="inline-flex items-center gap-1 bg-surface-active text-text-secondary text-xs rounded-full px-2 py-0.5">
         {{ a.name }}
         <form hx-post="/w/{{ workspace.slug }}/skills/{{ s.id }}/detach/{{ a.id }}" hx-target="#skills-list" hx-swap="outerHTML" class="inline">
-          <button class="text-zinc-500 hover:text-red-400">×</button>
+          <button class="text-text-subtle hover:text-red-400">×</button>
         </form>
       </span>
       {% endfor %}
       {% if agents %}
       <form hx-post="/w/{{ workspace.slug }}/skills/{{ s.id }}/attach" hx-target="#skills-list" hx-swap="outerHTML"
             class="inline-flex items-center gap-1">
-        <select name="agent_id" class="bg-zinc-950 border border-zinc-800 rounded text-xs text-zinc-300 px-2 py-1">
+        <select name="agent_id" class="bg-surface-input border border-border-strong rounded text-xs text-text-secondary px-2 py-1">
           {% for a in agents %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
         </select>
-        <button class="text-violet-400 hover:text-violet-300 text-xs">+ agente</button>
+        <button class="text-text-accent hover:text-accent-hover text-xs">+ agente</button>
       </form>
       {% endif %}
     </div>
   </div>
   {% else %}
-  <div class="text-zinc-500 text-sm">Nenhuma skill ainda.</div>
+  <div class="text-text-subtle text-sm">Nenhuma skill ainda.</div>
   {% endfor %}
 </div>

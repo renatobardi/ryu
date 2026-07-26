@@ -1,18 +1,17 @@
+{% from "_components/data/status_pill.html" import status_pill %}
 <div id="autopilots-list" class="space-y-3">
   {% for ap in autopilots %}
-  <div class="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+  <div class="bg-surface-card border border-border-default rounded-lg p-4">
     <div class="flex items-start justify-between">
       <div>
         <div class="flex items-center gap-2">
-          <span class="text-zinc-100 font-medium">{{ ap.name }}</span>
-          <span class="text-xs rounded-full px-2 py-0.5 {{ 'bg-emerald-900 text-emerald-300' if ap.enabled else 'bg-zinc-800 text-zinc-500' }}">
-            {{ 'ativo' if ap.enabled else 'pausado' }}
-          </span>
-          <span class="text-xs bg-zinc-800 text-zinc-400 rounded-full px-2 py-0.5">{{ ap.trigger_type }}</span>
-          {% if ap.cron_expr %}<span class="text-xs text-zinc-500 font-mono">{{ ap.cron_expr }}</span>{% endif %}
+          <span class="text-text-primary font-medium">{{ ap.name }}</span>
+          {% call status_pill(kind='state', status='on' if ap.enabled else 'off') %}{{ 'ativo' if ap.enabled else 'pausado' }}{% endcall %}
+          <span class="text-xs bg-surface-active text-text-secondary rounded-full px-2 py-0.5">{{ ap.trigger_type }}</span>
+          {% if ap.cron_expr %}<span class="text-xs text-text-subtle font-mono">{{ ap.cron_expr }}</span>{% endif %}
         </div>
-        {% if ap.rule %}<div class="text-zinc-400 text-sm mt-1">{{ ap.rule[:180] }}</div>{% endif %}
-        <div class="text-xs text-zinc-500 mt-1">
+        {% if ap.rule %}<div class="text-text-muted text-sm mt-1">{{ ap.rule[:180] }}</div>{% endif %}
+        <div class="text-xs text-text-subtle mt-1">
           agente: {{ agent_names.get(ap.target_agent_id, '—') }}
           {% if ap.webhook_token %}
           · webhook: <code class="font-mono">/api/autopilots/hook/{{ ap.webhook_token }}</code>
@@ -21,18 +20,18 @@
       </div>
       <div class="flex items-center gap-2">
         <form hx-post="/w/{{ workspace.slug }}/autopilots/{{ ap.id }}/run" hx-target="#autopilots-list" hx-swap="outerHTML">
-          <button class="text-violet-400 hover:text-violet-300 text-xs">rodar agora</button>
+          <button class="text-text-accent hover:text-accent-hover text-xs">rodar agora</button>
         </form>
         <form hx-post="/w/{{ workspace.slug }}/autopilots/{{ ap.id }}/toggle" hx-target="#autopilots-list" hx-swap="outerHTML">
-          <button class="text-zinc-400 hover:text-zinc-200 text-xs">{{ 'pausar' if ap.enabled else 'ativar' }}</button>
+          <button class="text-text-muted hover:text-text-secondary text-xs">{{ 'pausar' if ap.enabled else 'ativar' }}</button>
         </form>
         <form hx-post="/w/{{ workspace.slug }}/autopilots/{{ ap.id }}/delete" hx-target="#autopilots-list" hx-swap="outerHTML">
-          <button class="text-zinc-500 hover:text-red-400 text-xs">excluir</button>
+          <button class="text-text-subtle hover:text-red-400 text-xs">excluir</button>
         </form>
       </div>
     </div>
   </div>
   {% else %}
-  <div class="text-zinc-500 text-sm">Nenhum autopilot ainda.</div>
+  <div class="text-text-subtle text-sm">Nenhum autopilot ainda.</div>
   {% endfor %}
 </div>

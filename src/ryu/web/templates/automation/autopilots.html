@@ -2,28 +2,28 @@
 {% block title %}Autopilots — {{ workspace.name }}{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto p-6">
-  <h1 class="text-xl font-semibold text-zinc-100 mb-4">Autopilots</h1>
+  <h1 class="text-xl font-semibold text-text-primary mb-4">Autopilots</h1>
 
   <form hx-post="/w/{{ workspace.slug }}/autopilots" hx-target="#autopilots-list" hx-swap="outerHTML"
-        class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 mb-6 space-y-3">
+        class="bg-surface-card border border-border-default rounded-lg p-4 mb-6 space-y-3">
     <div class="grid grid-cols-2 gap-3">
       <input name="name" required placeholder="Nome do autopilot"
-             class="bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-100" />
-      <select name="trigger_type" class="bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-300">
+             class="bg-surface-input border border-border-strong rounded px-3 py-2 text-sm text-text-primary" />
+      <select name="trigger_type" class="bg-surface-input border border-border-strong rounded px-3 py-2 text-sm text-text-secondary">
         <option value="cron">cron</option>
         <option value="webhook">webhook</option>
         <option value="manual">manual</option>
       </select>
       <input name="cron_expr" placeholder="Cron (ex: 0 9 * * 1-5) — só p/ trigger cron"
-             class="bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-100" />
-      <select name="target_agent_id" class="bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-300">
+             class="bg-surface-input border border-border-strong rounded px-3 py-2 text-sm text-text-primary" />
+      <select name="target_agent_id" class="bg-surface-input border border-border-strong rounded px-3 py-2 text-sm text-text-secondary">
         <option value="">— sem agente (issue vai p/ backlog) —</option>
         {% for a in agents %}<option value="{{ a.id }}">{{ a.name }}</option>{% endfor %}
       </select>
     </div>
     <textarea name="rule" rows="3" placeholder="Regra / instrução — vira a descrição da issue criada em cada run…"
-              class="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-sm text-zinc-100"></textarea>
-    <button type="submit" class="bg-violet-600 hover:bg-violet-500 text-white text-sm px-4 py-2 rounded">
+              class="w-full bg-surface-input border border-border-strong rounded px-3 py-2 text-sm text-text-primary"></textarea>
+    <button type="submit" class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm px-4 py-2 rounded">
       Criar autopilot
     </button>
   </form>
