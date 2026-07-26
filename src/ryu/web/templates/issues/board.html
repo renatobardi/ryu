@@ -2,29 +2,29 @@
 {% block title %}{{ workspace.name }} — Board{% endblock %}
 {% block content %}
 <div class="flex flex-col h-full">
-  <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+  <div class="flex items-center justify-between px-6 py-4 border-b border-border-default">
     <div class="flex items-center gap-3">
-      <h1 class="text-lg font-semibold text-zinc-100">{{ workspace.name }}</h1>
-      <span class="text-xs text-zinc-500 uppercase tracking-wide">Board</span>
+      <h1 class="text-lg font-semibold text-text-primary">{{ workspace.name }}</h1>
+      <span class="text-xs text-text-muted uppercase tracking-wide">Board</span>
     </div>
     <form id="new-issue" hx-post="/w/{{ workspace.slug }}/board/issues"
           hx-target="#board-columns" hx-swap="outerHTML"
           class="flex items-center gap-2">
       <input name="title" id="new-issue-title" required placeholder="Nova issue..."
-             class="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-500 w-64">
-      <select name="status" class="bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-300">
+             class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm text-text-primary placeholder:text-text-faint focus:outline-none focus:border-border-focus w-64">
+      <select name="status" class="bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
         {% for st in column_order %}
         <option value="{{ st }}">{{ status_titles[st] }}</option>
         {% endfor %}
       </select>
-      <select name="assignee_agent_id" class="bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-300">
+      <select name="assignee_agent_id" class="bg-surface-input border border-border-strong rounded-md px-2 py-1.5 text-sm text-text-secondary">
         <option value="">Sem agente</option>
         {% for a in agents %}
         <option value="{{ a.id }}">@{{ a.handle }}</option>
         {% endfor %}
       </select>
       <button type="submit"
-              class="bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-md px-3 py-1.5">
+              class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm font-medium rounded-md px-3 py-1.5">
         Criar
       </button>
     </form>
