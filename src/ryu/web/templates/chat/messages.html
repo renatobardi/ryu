@@ -4,14 +4,14 @@
   <div class="max-w-[75%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap
               {% if m.role == 'user' %}bg-accent text-text-on-accent
               {% elif m.role == 'agent' %}bg-chat-bubble-agent-bg text-chat-bubble-agent-fg
-              {% else %}bg-chat-bubble-system-bg text-chat-bubble-system-fg border border-chat-bubble-system-fg/30{% endif %}">
+              {% else %}bg-chat-bubble-system-bg text-chat-bubble-system-fg border border-border-default{% endif %}">
     {% if m.role != 'user' %}
-    <div class="text-[10px] uppercase tracking-wide mb-1 {{ 'text-chat-bubble-system-fg' if m.role == 'system' else 'text-chat-bubble-agent-fg opacity-70' }}">
+    <div class="text-2xs uppercase tracking-wide mb-1 {{ 'text-chat-bubble-system-fg' if m.role == 'system' else 'text-text-subtle' }}">
       {{ 'sistema' if m.role == 'system' else 'agente' }}
     </div>
     {% endif %}
     {{ m.content }}
-    <div class="text-[10px] mt-1 opacity-60">{{ m.created_at.strftime('%H:%M') if m.created_at else '' }}</div>
+    <div class="text-2xs mt-1 opacity-60">{{ m.created_at.strftime('%H:%M') if m.created_at else '' }}</div>
   </div>
 </div>
 {% else %}
@@ -22,8 +22,8 @@
 
 {% if pending_task %}
 <div class="flex justify-start" id="chat-partial">
-  <div class="max-w-[75%] rounded-xl px-3 py-2 text-sm bg-chat-bubble-agent-bg text-chat-bubble-agent-fg border border-chat-bubble-agent-fg/20">
-    <div class="text-[10px] uppercase tracking-wide mb-1 text-chat-bubble-agent-fg flex items-center gap-1.5">
+  <div class="max-w-[75%] rounded-xl px-3 py-2 text-sm bg-chat-bubble-agent-bg text-chat-bubble-agent-fg">
+    <div class="text-2xs uppercase tracking-wide mb-1 text-chat-bubble-agent-fg flex items-center gap-1.5">
       <span class="inline-block w-1.5 h-1.5 rounded-full bg-chat-bubble-agent-fg animate-pulse"></span>
       {% if pending_task.status == 'running' %}agente rodando…{% else %}agente na fila…{% endif %}
     </div>
@@ -33,12 +33,12 @@
     {% if partial_activity %}
     <div class="mt-1 space-y-0.5">
       {% for line in partial_activity %}
-      <div class="text-[11px] font-mono text-chat-bubble-agent-fg/60 truncate">{{ line }}</div>
+      <div class="text-11 font-mono text-text-subtle truncate">{{ line }}</div>
       {% endfor %}
     </div>
     {% endif %}
     {% if not partial_texts and not partial_activity %}
-    <span class="text-chat-bubble-agent-fg/60 animate-pulse">agente digitando…</span>
+    <span class="text-text-subtle animate-pulse">agente digitando…</span>
     {% endif %}
   </div>
 </div>
