@@ -2,6 +2,10 @@ name: Release
 
 on:
   push:
+    # Todo merge na main publica uma release, subindo a minor.
+    branches:
+      - main
+    # Uma tag v* criada à mão continua funcionando como antes.
     tags:
       - "v*"
   workflow_dispatch:
@@ -12,7 +16,9 @@ on:
         default: "latest"
 
 permissions:
-  contents: read
+  # write porque o job cria a tag da release. Tag criada com o GITHUB_TOKEN não
+  # re-dispara workflow — o GitHub bloqueia recursão —, então não há loop.
+  contents: write
   packages: write
 
 jobs:
@@ -21,16 +27,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # As tags precisam vir junto para calcular a próxima versão.
+          fetch-depth: 0
 
       - name: Determine image tag
         id: meta
         run: |
+          set -euo pipefail
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             tag="${{ github.event.inputs.tag }}"
-          else
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
             tag="${{ github.ref_name }}"
+          else
+            # Merge na main: sobe o último número a partir da última tag v*
+            # (v0.4.7 -> v0.4.8). Os dois primeiros só mudam por tag manual.
+            latest="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
+            if [ -z "$latest" ]; then
+              tag="v0.1.0"
+            else
+              rest="${latest#v}"
+              major="${rest%%.*}"
+              minor="${rest#*.}"
+              minor="${minor%%.*}"
+              patch="${rest##*.}"
+              tag="v${major}.${minor}.$((patch + 1))"
+            fi
+            echo "última tag: ${latest:-nenhuma} -> nova: $tag"
           fi
-          echo "tag=${tag:-latest}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release tag
+        # Só quando a versão foi calculada aqui; tag criada à mão já existe.
+        if: github.event_name == 'push' && github.ref_type == 'branch'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Ryu $TAG"
+          git push origin "$TAG"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
