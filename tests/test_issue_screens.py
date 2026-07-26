@@ -256,3 +256,32 @@ def test_attachments_use_lucide(env):
     _assert_no_legacy_tokens(html, "_attachments.html")
     assert 'data-lucide="paperclip"' in html
     assert "📎" not in html
+
+
+# ── Lucide re-init after htmx swap ──────────────────────────────────────────
+
+
+def test_base_html_reinitialises_lucide_after_htmx_swap():
+    base = (TEMPLATES / "base.html").read_text()
+    assert "htmx.onLoad" in base
+    assert "lucide.createIcons" in base
+    assert "root:" in base
+
+
+# ── Priority map completeness ───────────────────────────────────────────────
+
+
+@pytest.mark.parametrize("priority", ["urgent", "high", "medium", "low"])
+def test_board_columns_priority_map_resolves_every_priority(env, priority):
+    ctx = _board_ctx()
+    ctx["columns"]["backlog"] = [{
+        "id": "ip",
+        "key": "RYU-P",
+        "title": "Priority test",
+        "priority": priority,
+        "assignee_type": None,
+        "assignee_id": None,
+    }]
+    html = _render(env, "issues/_board_columns.html", ctx)
+    assert f"bg-prio-{priority}-bg" in html
+    assert f"text-prio-{priority}-fg" in html
