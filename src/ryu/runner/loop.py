@@ -252,14 +252,12 @@ async def _execute_real(db, task: AgentTask, agent: Agent) -> ExecResult | None:
     # skills anexadas ao agente → skills/<slug>/SKILL.md + arquivos de suporte
     # (paridade multica: cada skill vira um diretório com SKILL.md + skill_files)
     from ryu.models import AgentSkill, Skill, SkillFile
-    from ryu.runner.builtin_skills import load_builtin_skills
 
     res = await db.execute(
         select(Skill).join(AgentSkill, AgentSkill.skill_id == Skill.id).where(AgentSkill.agent_id == agent.id)
     )
     skills = res.scalars().all()
-    builtin_skills = load_builtin_skills()
-    if skills or builtin_skills:
+    if skills:
         skills_root = workdir / "skills"
         index_lines: list[str] = []
         for s in skills:
@@ -278,24 +276,8 @@ async def _execute_real(db, task: AgentTask, agent: Agent) -> ExecResult | None:
                 dest.write_text(sf.content or "", encoding="utf-8")
             desc = f" — {s.description}" if s.description else ""
             index_lines.append(f"- {s.name}: skills/{slug}/SKILL.md{desc}")
-        # skills built-in de plataforma (paridade multica: sempre acrescentadas
-        # por cima das skills de workspace do agente — task.go:3777 BuiltinSkills())
-        for bs in builtin_skills:
-            sdir = skills_root / bs.slug
-            sdir.mkdir(parents=True, exist_ok=True)
-            (sdir / "SKILL.md").write_text(bs.content, encoding="utf-8")
-            for bf in bs.files:
-                rel = Path(bf.path)
-                if rel.is_absolute() or ".." in rel.parts:
-                    continue  # nunca escreve fora do diretório da skill
-                dest = sdir / rel
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(bf.content, encoding="utf-8")
-            index_lines.append(f"- {bs.slug} (built-in): skills/{bs.slug}/SKILL.md")
         (workdir / "SKILLS.md").write_text(
-            "# Skills disponíveis\n\nCada skill vive em skills/<nome>/SKILL.md com seus arquivos de apoio.\n"
-            "As skills built-in de plataforma (prefixo ryu-) são entregues a todo agente,\n"
-            "por cima das skills de workspace.\n\n"
+            "# Skills disponíveis\n\nCada skill vive em skills/<nome>/SKILL.md com seus arquivos de apoio.\n\n"
             + "\n".join(index_lines),
             encoding="utf-8",
         )
@@ -422,7 +404,7 @@ async def _execute_real(db, task: AgentTask, agent: Agent) -> ExecResult | None:
                         )
                         await wdb.commit()
             except asyncio.CancelledError:
-                pass
+                raise  # cancelamento não é engolido; quem cancela (finally) faz o suppress
 
         wd = asyncio.create_task(_watchdog())
         try:

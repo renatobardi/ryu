@@ -34,6 +34,7 @@ import signal
 import socket
 import subprocess
 import sys
+import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -69,6 +70,24 @@ def _now_iso() -> str:
 
 def _log(msg: str) -> None:
     print(f"[{_now_iso()}] {msg}", flush=True)
+
+
+async def _run_capture(cmd: list[str], *, timeout: float) -> tuple[int, str, str]:
+    """Roda um binário sem bloquear o event loop; devolve (returncode, stdout, stderr)."""
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    try:
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except asyncio.TimeoutError:
+        proc.kill()
+        await proc.wait()
+        raise
+    return (
+        proc.returncode or 0,
+        (stdout or b"").decode(errors="replace"),
+        (stderr or b"").decode(errors="replace"),
+    )
 
 
 class Daemon:
@@ -186,11 +205,11 @@ class Daemon:
         status, message, version = "failed", "", ""
         if binary and args is not None:
             try:
-                out = subprocess.run([binary, *args], capture_output=True, text=True, timeout=300)
-                status = "completed" if out.returncode == 0 else "failed"
-                message = (out.stdout or out.stderr or "")[-1000:]
-                ver = subprocess.run([binary, "--version"], capture_output=True, text=True, timeout=10)
-                version = (ver.stdout or "").strip().splitlines()[0][:80] if ver.stdout else ""
+                rc, out, err = await _run_capture([binary, *args], timeout=300)
+                status = "completed" if rc == 0 else "failed"
+                message = (out or err or "")[-1000:]
+                _, ver_out, _ = await _run_capture([binary, "--version"], timeout=10)
+                version = ver_out.strip().splitlines()[0][:80] if ver_out.strip() else ""
             except Exception as e:  # noqa: BLE001
                 message = str(e)
         else:
@@ -373,7 +392,10 @@ class Daemon:
         except ImportError:
             _log("lib `websockets` ausente — usando só poll HTTP")
             return
-        url = self.server_url.replace("http://", "ws://").replace("https://", "wss://")
+        # mesma origem do server, só trocando o esquema HTTP pelo WebSocket
+        parts = urllib.parse.urlsplit(self.server_url)
+        ws_scheme = "wss" if parts.scheme == "https" else "ws"
+        url = urllib.parse.urlunsplit(parts._replace(scheme=ws_scheme))
         token = self.user_token
         while not self._stop.is_set():
             try:

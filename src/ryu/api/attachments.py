@@ -1,6 +1,6 @@
 """API de ATTACHMENTS/uploads (paridade multica file.go).
 
-- `upload_router` (prefix /api): POST /upload-file (multipart) + GET/DELETE /attachments/*.
+- `router` (prefix /api): POST /upload-file (multipart) + GET/DELETE /attachments/*.
 - `uploads_router` (sem prefix): GET /uploads/{...} — serve storage local.
 """
 from __future__ import annotations
@@ -17,7 +17,7 @@ from ryu.models import User
 from ryu.services import attachments as svc
 from ryu.services.auth import current_user
 
-upload_router = APIRouter()
+router = APIRouter()
 uploads_router = APIRouter()
 
 
@@ -31,7 +31,7 @@ def _actor(user: User) -> tuple[str, str]:
     return "member", user.id
 
 
-@upload_router.post("/upload-file", status_code=201)
+@router.post("/upload-file", status_code=201)
 async def upload_file(
     file: UploadFile = File(...),
     workspace_id: str = Form(...),
@@ -59,7 +59,7 @@ async def upload_file(
     return svc.attachment_to_dict(att)
 
 
-@upload_router.get("/attachments/{attachment_id}")
+@router.get("/attachments/{attachment_id}")
 async def get_attachment(
     attachment_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)
 ):
@@ -70,7 +70,7 @@ async def get_attachment(
     return svc.attachment_to_dict(att)
 
 
-@upload_router.get("/attachments/{attachment_id}/download")
+@router.get("/attachments/{attachment_id}/download")
 async def download_attachment(
     attachment_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)
 ):
@@ -90,7 +90,7 @@ async def download_attachment(
     )
 
 
-@upload_router.get("/attachments/{attachment_id}/content")
+@router.get("/attachments/{attachment_id}/content")
 async def attachment_content(
     attachment_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)
 ):
@@ -110,7 +110,7 @@ async def attachment_content(
     )
 
 
-@upload_router.delete("/attachments/{attachment_id}", status_code=204)
+@router.delete("/attachments/{attachment_id}", status_code=204)
 async def delete_attachment(
     attachment_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)
 ):
@@ -126,7 +126,7 @@ async def delete_attachment(
 async def serve_upload(file_path: str):
     root = Path(settings.uploads_dir).resolve()
     target = (root / file_path).resolve()
-    if not str(target).startswith(str(root)):  # path traversal
+    if not target.is_relative_to(root):  # path traversal
         raise HTTPException(404, "não encontrado")
     if not target.is_file():
         raise HTTPException(404, "não encontrado")

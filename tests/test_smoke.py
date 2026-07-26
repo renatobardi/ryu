@@ -1,7 +1,24 @@
 """Smoke tests: app sobe, healthz, auth por código dev, proteção 401."""
 from __future__ import annotations
 
+import importlib
+import pkgutil
+
+from fastapi import APIRouter
+
 from tests.conftest import DEV_CODE, login
+
+
+def test_every_api_module_exposes_router():
+    """CONTRACTS.md item 3: todos os routers expõem `router = APIRouter()`."""
+    import ryu.api
+
+    missing = []
+    for mod in pkgutil.iter_modules(ryu.api.__path__):
+        module = importlib.import_module(f"ryu.api.{mod.name}")
+        if not isinstance(getattr(module, "router", None), APIRouter):
+            missing.append(mod.name)
+    assert missing == []
 
 
 async def test_healthz(client):

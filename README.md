@@ -34,8 +34,10 @@
 
 ## Build & Run
 
+Veja o guia completo de deploy em [DEPLOY.md](DEPLOY.md).
+
 ```bash
-docker build -f deploy/Dockerfile -t ryu .
+docker build -f docker/Dockerfile -t ryu .
 
 docker run -d --name ryu \
   -p 8000:8000 \
@@ -104,11 +106,3 @@ Prefixo `RYU_` (via pydantic-settings; `.env` também funciona):
 - **Postgres** como caminho de produção documentado com migrações (Alembic).
 - **Multi-nó**: hub realtime distribuído (Redis pub/sub) e fila de tasks compartilhada para escalar runners horizontalmente.
 - Mais adapters de agente e marketplace de skills.
-
-
-## Documentação
-
-- [docs/DEPLOY.md](docs/DEPLOY.md) — deploy e operação
-- [docs/PARITY.md](docs/PARITY.md) — paridade funcional com o multica
-- [docs/CONTRACTS.md](docs/CONTRACTS.md) — contratos internos do codebase
-- [docs/ryu-plano-stack.md](docs/ryu-plano-stack.md) — plano original e decisões de stack

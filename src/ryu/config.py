@@ -39,7 +39,6 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from_email: str | None = None
     smtp_tls: str = ""  # starttls|implicit|smtps|ssl ("" = starttls; porta 465 força implicit)
-    smtp_tls_insecure: bool = False
     smtp_ehlo_name: str | None = None
     resend_api_key: str | None = None
     resend_from_email: str | None = None
@@ -101,10 +100,6 @@ class Settings(BaseSettings):
     usage_rollup_interval_seconds: int = 60  # cadência do job incremental de rollup
     metrics_enabled: bool = True  # RYU_METRICS_ENABLED=false desliga /metrics (404)
     readiness_cache_seconds: float = 5.0  # cache curto do /readyz p/ não martelar o DB
-
-    # ── Feature flags (multica pkg/featureflag) ───────────────────────
-    # arquivo YAML opcional; overrides por env var FF_<KEY>=true|false|42%|variant
-    feature_flags_file: Path | None = None
 
     # ── Integrations (integrations ciclo 1) ───────────────────────────
     # Chave usada p/ criptografar tokens/secrets de integrações no banco

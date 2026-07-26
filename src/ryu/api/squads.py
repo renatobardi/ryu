@@ -18,7 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ryu.db import get_db
 from ryu.models import Agent, Issue, User, Workspace
-from ryu.services import automation as svc
+from ryu.services import squads as svc
+from ryu.services.automation import AutomationError
 from ryu.services.auth import current_user
 
 router = APIRouter()
@@ -28,7 +29,7 @@ _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 
 
-def _http(e: svc.AutomationError) -> HTTPException:
+def _http(e: AutomationError) -> HTTPException:
     return HTTPException(status_code=e.status_code, detail=e.message)
 
 
@@ -71,7 +72,7 @@ async def create_squad(payload: SquadCreate, db: AsyncSession = Depends(get_db),
             db, payload.workspace_id, payload.name, payload.leader_agent_id,
             description=payload.description, instructions=payload.instructions,
         )
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return svc.squad_to_dict(squad, await svc.list_squad_members(db, squad.id))
 
@@ -88,7 +89,7 @@ async def list_squads(workspace_id: str, db: AsyncSession = Depends(get_db), use
 async def get_squad(squad_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         squad = await svc.get_squad(db, squad_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return svc.squad_to_dict(squad, await svc.list_squad_members(db, squad_id))
 
@@ -97,7 +98,7 @@ async def get_squad(squad_id: str, db: AsyncSession = Depends(get_db), user: Use
 async def patch_squad(squad_id: str, payload: SquadPatch, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         squad = await svc.update_squad(db, squad_id, payload.model_dump(exclude_unset=True))
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return svc.squad_to_dict(squad, await svc.list_squad_members(db, squad_id))
 
@@ -106,7 +107,7 @@ async def patch_squad(squad_id: str, payload: SquadPatch, db: AsyncSession = Dep
 async def delete_squad(squad_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         await svc.delete_squad(db, squad_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
 
 
@@ -114,7 +115,7 @@ async def delete_squad(squad_id: str, db: AsyncSession = Depends(get_db), user: 
 async def members(squad_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         await svc.get_squad(db, squad_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return [
         {"member_type": m.member_type, "member_id": m.member_id, "role": getattr(m, "role", "") or ""}
@@ -127,7 +128,7 @@ async def members_status(squad_id: str, db: AsyncSession = Depends(get_db), user
     """Status derivado dos membros (working/idle/archived + issues ativas)."""
     try:
         return await svc.list_squad_member_status(db, squad_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
 
 
@@ -139,7 +140,7 @@ async def patch_member_role(
         row = await svc.set_squad_member_role(
             db, squad_id, payload.member_type, payload.member_id, payload.role
         )
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return {"member_type": row.member_type, "member_id": row.member_id, "role": row.role}
 
@@ -148,7 +149,7 @@ async def patch_member_role(
 async def add_member(squad_id: str, payload: MemberAdd, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     try:
         await svc.add_squad_member(db, squad_id, payload.member_type, payload.member_id, payload.role)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
 
 
@@ -165,7 +166,7 @@ async def assign_issue(
 ):
     try:
         task = await svc.assign_issue_to_squad(db, squad_id, payload.issue_id, "member", user.id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     return {"task_id": task.id, "agent_id": task.agent_id, "issue_id": task.issue_id, "status": task.status}
 
@@ -228,7 +229,7 @@ async def squads_page_create(
         await svc.create_squad(
             db, ws.id, name, leader_agent_id, description=description, instructions=instructions
         )
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     ctx = await _squads_ctx(db, ws)
     ctx["request"] = request
@@ -248,7 +249,7 @@ async def squads_page_add_member(
     ws = await _workspace_by_slug(db, slug)
     try:
         await svc.add_squad_member(db, squad_id, "agent", agent_id, role)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     ctx = await _squads_ctx(db, ws)
     ctx["request"] = request
@@ -267,7 +268,7 @@ async def squads_page_assign(
     ws = await _workspace_by_slug(db, slug)
     try:
         await svc.assign_issue_to_squad(db, squad_id, issue_id, "member", user.id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     ctx = await _squads_ctx(db, ws)
     ctx["request"] = request
@@ -287,7 +288,7 @@ async def squads_page_update(
     ws = await _workspace_by_slug(db, slug)
     try:
         await svc.update_squad(db, squad_id, {"description": description, "instructions": instructions})
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     ctx = await _squads_ctx(db, ws)
     ctx["request"] = request
@@ -305,7 +306,7 @@ async def squads_page_delete(
     ws = await _workspace_by_slug(db, slug)
     try:
         await svc.delete_squad(db, squad_id)
-    except svc.AutomationError as e:
+    except AutomationError as e:
         raise _http(e)
     ctx = await _squads_ctx(db, ws)
     ctx["request"] = request

@@ -41,7 +41,6 @@ class EmailService:
         self.smtp_port = settings.smtp_port
         self.smtp_username = settings.smtp_username or ""
         self.smtp_password = settings.smtp_password or ""
-        self.smtp_tls_insecure = settings.smtp_tls_insecure
         self.smtp_ehlo_name = (settings.smtp_ehlo_name or "").strip() or None
         tls_mode = (settings.smtp_tls or "").strip().lower()
         self.smtp_tls_implicit = tls_mode in ("implicit", "smtps", "ssl") or (
@@ -82,10 +81,8 @@ class EmailService:
         if not self.from_email:
             raise RuntimeError("RYU_SMTP_FROM_EMAIL ou RYU_RESEND_FROM_EMAIL é obrigatório com SMTP")
 
+        # Contexto padrão: hostname + cadeia de certificados sempre verificados.
         tls_ctx = ssl.create_default_context()
-        if self.smtp_tls_insecure:
-            tls_ctx.check_hostname = False
-            tls_ctx.verify_mode = ssl.CERT_NONE
 
         if self.smtp_tls_implicit:
             client = smtplib.SMTP_SSL(

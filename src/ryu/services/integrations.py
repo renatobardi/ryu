@@ -23,7 +23,6 @@ from ryu.models import (
     ChannelInboundDedup,
     ChannelInstallation,
     ChannelUserBinding,
-    ChatSession,
     GithubCheckRun,
     GithubInstallation,
     GithubPullRequest,
@@ -233,88 +232,6 @@ async def upsert_github_pull_request(
         {"id": row.id, "repo": repo_full_name, "number": number, "state": state, "merged": merged},
     )
     return row
-
-
-def github_pull_request_to_dict(row: GithubPullRequest, checks: list[GithubCheckRun] | None = None) -> dict:
-    repo_owner, _, repo_name = row.repo_full_name.partition("/")
-    return {
-        "id": row.id,
-        "provider": "github",
-        "workspace_id": row.workspace_id,
-        "repo_owner": repo_owner,
-        "repo_name": repo_name or row.repo_full_name,
-        "number": row.number,
-        "title": row.title,
-        "state": row.state,
-        "draft": row.draft,
-        "merged": row.merged,
-        "html_url": row.url,
-        "branch": row.head_ref or None,
-        "author_login": row.author_login or None,
-        "mergeable_state": (
-            None if row.mergeable is None else ("mergeable" if row.mergeable else "conflicting")
-        ),
-        "pr_created_at": row.created_at.isoformat() if row.created_at else None,
-        "pr_updated_at": row.updated_at.isoformat() if row.updated_at else None,
-        "checks": [
-            {
-                "id": c.id,
-                "external_id": c.external_id,
-                "name": c.name,
-                "status": c.status,
-                "conclusion": c.conclusion,
-            }
-            for c in (checks or [])
-        ],
-    }
-
-
-def vcs_pull_request_to_dict(row: VcsPullRequest, provider: str) -> dict:
-    return {
-        "id": row.id,
-        "provider": provider,
-        "workspace_id": row.workspace_id,
-        "connection_id": row.connection_id,
-        "number": row.number,
-        "title": row.title,
-        "state": row.state,
-        "draft": row.draft,
-        "merged": row.merged,
-        "html_url": row.url,
-        "branch": None,
-        "author_login": None,
-        "mergeable_state": None,
-        "pr_created_at": row.created_at.isoformat() if row.created_at else None,
-        "pr_updated_at": row.updated_at.isoformat() if row.updated_at else None,
-        "checks": [],
-    }
-
-
-async def list_pull_requests_for_issue(db: AsyncSession, issue_id: str) -> list[dict]:
-    """Lista PRs vinculados a uma issue (github + vcs self-hosted), mais
-    recentes primeiro (multica router.go:1112, ListPullRequestsForIssue)."""
-    links = (
-        await db.execute(select(IssuePullRequest).where(IssuePullRequest.issue_id == issue_id))
-    ).scalars().all()
-    out: list[dict] = []
-    for link in links:
-        if link.provider == "github":
-            pr = await db.get(GithubPullRequest, link.pull_request_ref)
-            if pr is None:
-                continue
-            checks = (
-                await db.execute(
-                    select(GithubCheckRun).where(GithubCheckRun.pull_request_id == pr.id)
-                )
-            ).scalars().all()
-            out.append(github_pull_request_to_dict(pr, checks))
-        else:
-            pr = await db.get(VcsPullRequest, link.pull_request_ref)
-            if pr is None:
-                continue
-            out.append(vcs_pull_request_to_dict(pr, link.provider))
-    out.sort(key=lambda d: d["pr_created_at"] or "", reverse=True)
-    return out
 
 
 async def upsert_github_check_run(
@@ -616,44 +533,6 @@ async def get_or_create_chat_link(
         await db.commit()
         await db.refresh(row)
     return row
-
-
-async def route_channel_message(
-    db: AsyncSession, *, installation: ChannelInstallation, external_channel_id: str,
-    external_thread_id: str, user_id: str, text: str,
-) -> None:
-    """Ponte canal→agente (multica channel/engine/router.go: ensure session →
-    append+mark → trigger agent run). Vincula (ou cria) uma chat_session real
-    ao thread do canal via get_or_create_chat_link e enfileira a AgentTask —
-    a resposta real do agente é entregue de volta ao canal por
-    chat.handle_chat_task_done quando a task termina (ver ali)."""
-    if not text.strip():
-        return
-    if not installation.agent_id:
-        log.warning("channel_route_no_agent", installation_id=installation.id)
-        return
-
-    from ryu.services import chat as chat_svc
-
-    async def _create_session() -> str:
-        session = await chat_svc.create_session(
-            db, workspace_id=installation.workspace_id, user_id=user_id,
-            agent_id=installation.agent_id,
-            title=f"{installation.channel_type}: {external_channel_id}"[:60] or "Nova conversa",
-        )
-        return session.id
-
-    link = await get_or_create_chat_link(
-        db, channel_type=installation.channel_type, installation_id=installation.id,
-        external_channel_id=external_channel_id,
-        external_thread_id=external_thread_id or external_channel_id,
-        create_session=_create_session,
-    )
-    session = await db.get(ChatSession, link.chat_session_id)
-    if session is None or session.archived:
-        log.warning("channel_route_session_unavailable", installation_id=installation.id)
-        return
-    await chat_svc.add_user_message(db, session, text)
 
 
 def markdown_to_mrkdwn(text: str) -> str:

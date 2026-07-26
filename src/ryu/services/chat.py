@@ -32,8 +32,6 @@ from ryu.db import SessionLocal
 from ryu.models import (
     Agent,
     AgentTask,
-    ChannelChatLink,
-    ChannelInstallation,
     ChatDraftRestore,
     ChatMessage,
     ChatPinnedAgent,
@@ -671,31 +669,6 @@ async def handle_chat_task_done(task: AgentTask) -> ChatMessage | None:
         await db.refresh(msg)
         workspace_id = session.workspace_id
         session_id = session.id
-
-        # ponte canal→agente (multica router.go: outbound reply): se esta
-        # sessão está vinculada a um canal (Slack/Lark), entrega a resposta
-        # real do agente de volta ao thread de origem.
-        link_res = await db.execute(
-            select(ChannelChatLink).where(ChannelChatLink.chat_session_id == session_id)
-        )
-        link = link_res.scalars().first()
-        if link is not None and role in ("agent", "system"):
-            installation = await db.get(ChannelInstallation, link.installation_id)
-            if installation is not None and installation.status == "active":
-                from ryu.services import integrations as integrations_svc
-
-                try:
-                    if link.channel_type == "slack":
-                        await integrations_svc.send_slack_message(
-                            installation, link.external_channel_id, content,
-                            thread_ts=link.external_thread_id or None,
-                        )
-                    elif link.channel_type == "lark":
-                        await integrations_svc.send_lark_message(
-                            installation, link.external_channel_id, content
-                        )
-                except Exception as e:  # nunca falha o chat por causa do canal
-                    log.error("channel_outbound_failed", channel_type=link.channel_type, error=str(e))
 
     await hub.publish(
         workspace_id,

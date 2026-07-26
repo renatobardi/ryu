@@ -849,22 +849,6 @@ async def issue_attachments(issue_id: str, db: AsyncSession = Depends(get_db), u
     return [att_svc.attachment_to_dict(a) for a in atts]
 
 
-@router.get("/{issue_id}/pull-requests")
-async def issue_pull_requests(issue_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
-    """Lista PRs (GitHub/VCS) vinculados à issue (multica router.go:1112).
-
-    Refresh ativo via snapshot GraphQL/JWT RS256 (MUL-5265) é fora de escopo
-    (limitação documentada); esta rota expõe o último estado espelhado."""
-    from ryu.services import integrations as integ_svc
-
-    try:
-        await svc.get_issue(db, issue_id)
-    except svc.IssueError as e:
-        raise _err(e)
-    prs = await integ_svc.list_pull_requests_for_issue(db, issue_id)
-    return {"pull_requests": prs}
-
-
 # ── Sub-issues ────────────────────────────────────────────────────────
 @router.get("/{issue_id}/sub-issues")
 async def sub_issues(issue_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
@@ -890,15 +874,16 @@ async def squad_evaluated(
     user: User = Depends(current_user),
 ):
     """Registra a decisão do líder da squad (autenticável pelo token rat_)."""
-    from ryu.services import automation as automation_svc
+    from ryu.services import squads as squads_svc
+    from ryu.services.automation import AutomationError
 
     actor_type, actor_id = _actor(user)
     try:
-        return await automation_svc.record_squad_evaluation(
+        return await squads_svc.record_squad_evaluation(
             db, issue_id, actor_type, actor_id,
             outcome=payload.outcome, squad_id=payload.squad_id,
         )
-    except automation_svc.AutomationError as e:
+    except AutomationError as e:
         raise HTTPException(status_code=e.status_code, detail=e.message)
 
 
