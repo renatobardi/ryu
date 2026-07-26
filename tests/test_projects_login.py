@@ -81,10 +81,10 @@ def _assert_no_legacy_palette(html, source):
 def test_projects_index_uses_semantic_vocabulary(env):
     html = _render(env, "projects/index.html", _projects_ctx())
     _assert_no_legacy_palette(html, "projects/index.html")
-    # Estado do projeto vem do macro status_pill kind='state'.
+    # Project state comes from the status_pill macro with kind='state'.
     assert "bg-state-on-bg text-state-on-fg" in html
     assert "bg-state-off-bg text-state-off-fg" in html
-    # Cartões, inputs e botão primário usam tokens semânticos.
+    # Cards, inputs and primary button use semantic tokens.
     assert "bg-surface-card border border-border-default" in html
     assert "bg-surface-input border border-border-strong" in html
     assert "bg-accent hover:bg-accent-hover text-text-on-accent" in html
@@ -105,7 +105,7 @@ def test_projects_index_keeps_grid_and_empty_state(env):
 def test_project_detail_uses_semantic_vocabulary(env):
     html = _render(env, "projects/detail.html", _project_detail_ctx())
     _assert_no_legacy_palette(html, "projects/detail.html")
-    # Status do projeto em state pill; badge do status da issue em superfície neutra.
+    # Project status in a state pill; issue status badge on a neutral surface.
     assert "bg-state-on-bg text-state-on-fg" in html
     assert "bg-surface-active" in html
     assert "text-text-muted" in html
@@ -117,13 +117,13 @@ def test_project_detail_uses_semantic_vocabulary(env):
 def test_login_uses_semantic_vocabulary(env):
     html = _render(env, "login.html", {})
     _assert_no_legacy_palette(html, "login.html")
-    # Logo e botões primários usam acento semântico; card usa surface-card.
+    # Logo and primary buttons use the semantic accent; card uses surface-card.
     assert "bg-accent" in html
     assert "text-text-on-accent" in html
     assert "bg-surface-card border border-border-default" in html
-    # Espaçamento do código de verificação preservado.
+    # Verification code letter spacing is preserved.
     assert "tracking-code" in html
-    # Foco e inputs usam tokens semânticos.
+    # Focus and inputs use semantic tokens.
     assert "focus:border-border-focus" in html
     assert "bg-surface-input border border-border-strong" in html
 
