@@ -2,10 +2,8 @@
 membros, CSRF, allowlists, PAT, notification preferences e inbox em lote."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-
 import httpx
-
+from datetime import datetime, timedelta, timezone
 from .conftest import DEV_CODE, login
 
 

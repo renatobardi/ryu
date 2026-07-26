@@ -2,21 +2,10 @@
 from __future__ import annotations
 
 import datetime
-from pathlib import Path
 
 import pytest
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-REPO = Path(__file__).resolve().parents[1]
-TEMPLATES = REPO / "src/ryu/web/templates"
-
-
-@pytest.fixture(scope="module")
-def env():
-    return Environment(
-        loader=FileSystemLoader(str(TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
-    )
+from .conftest import TEMPLATES, assert_no_legacy_vocabulary, render  # noqa: F401
 
 
 _COMMON_CTX = {
@@ -37,8 +26,6 @@ _STATUS_TITLES = {
 _NOW = datetime.datetime.now()
 
 
-def _render(env, name, ctx):
-    return env.get_template(name).render(**ctx)
 
 
 def _board_ctx():
@@ -167,17 +154,14 @@ def _attachments_ctx():
     }
 
 
-def _assert_no_legacy_tokens(html, source):
-    for token in ("zinc-", "violet-", "#111116"):
-        assert token not in html, f"{token} found in {source}"
 
 
 # ── Board columns ───────────────────────────────────────────────────────────
 
 
 def test_board_columns_use_semantic_vocabulary(env):
-    html = _render(env, "issues/_board_columns.html", _board_ctx())
-    _assert_no_legacy_tokens(html, "_board_columns.html")
+    html = render(env, "issues/_board_columns.html", _board_ctx())
+    assert_no_legacy_vocabulary(html, "_board_columns.html")
     # priority drawn by explicit semantic token map, not arbitrary colors
     assert "bg-prio-urgent-bg" in html
     assert "text-prio-urgent-fg" in html
@@ -188,13 +172,13 @@ def test_board_columns_use_semantic_vocabulary(env):
 
 
 def test_board_columns_use_lucide_for_assignee(env):
-    html = _render(env, "issues/_board_columns.html", _board_ctx())
+    html = render(env, "issues/_board_columns.html", _board_ctx())
     assert 'data-lucide="bot"' in html
     assert 'data-lucide="user"' in html
 
 
 def test_board_columns_drag_and_drop_attributes(env):
-    html = _render(env, "issues/_board_columns.html", _board_ctx())
+    html = render(env, "issues/_board_columns.html", _board_ctx())
     assert 'draggable="true"' in html
     assert 'data-column-status="backlog"' in html
     assert 'data-issue-id="i1"' in html
@@ -204,8 +188,8 @@ def test_board_columns_drag_and_drop_attributes(env):
 
 
 def test_board_page_uses_semantic_vocabulary(env):
-    html = _render(env, "issues/board.html", _board_ctx())
-    _assert_no_legacy_tokens(html, "board.html")
+    html = render(env, "issues/board.html", _board_ctx())
+    assert_no_legacy_vocabulary(html, "board.html")
     assert "bg-accent" in html
     assert "border-border-default" in html
 
@@ -214,8 +198,8 @@ def test_board_page_uses_semantic_vocabulary(env):
 
 
 def test_detail_page_uses_semantic_vocabulary(env):
-    html = _render(env, "issues/detail.html", _detail_ctx())
-    _assert_no_legacy_tokens(html, "detail.html")
+    html = render(env, "issues/detail.html", _detail_ctx())
+    assert_no_legacy_vocabulary(html, "detail.html")
     # sub-issue status uses the status_dot macro, not a zinc badge
     assert "bg-status-done" in html
     assert "bg-status-todo" in html
@@ -223,12 +207,12 @@ def test_detail_page_uses_semantic_vocabulary(env):
 
 
 def test_detail_page_uses_lucide_for_assignee(env):
-    html = _render(env, "issues/detail.html", _detail_ctx())
+    html = render(env, "issues/detail.html", _detail_ctx())
     assert 'data-lucide="bot"' in html
     # member assignee branch renders the user icon
     member_ctx = _detail_ctx()
     member_ctx["issue"] = {**member_ctx["issue"], "assignee_type": "member", "assignee_id": "u1"}
-    member_html = _render(env, "issues/detail.html", member_ctx)
+    member_html = render(env, "issues/detail.html", member_ctx)
     assert 'data-lucide="user"' in member_html
 
 
@@ -236,8 +220,8 @@ def test_detail_page_uses_lucide_for_assignee(env):
 
 
 def test_comments_preserve_author_markers_and_use_lucide(env):
-    html = _render(env, "issues/_comments.html", _comments_ctx())
-    _assert_no_legacy_tokens(html, "_comments.html")
+    html = render(env, "issues/_comments.html", _comments_ctx())
+    assert_no_legacy_vocabulary(html, "_comments.html")
     # author markers preserved as emoji text
     assert "🤖" in html
     assert "👤" in html
@@ -252,8 +236,8 @@ def test_comments_preserve_author_markers_and_use_lucide(env):
 
 
 def test_attachments_use_lucide(env):
-    html = _render(env, "issues/_attachments.html", _attachments_ctx())
-    _assert_no_legacy_tokens(html, "_attachments.html")
+    html = render(env, "issues/_attachments.html", _attachments_ctx())
+    assert_no_legacy_vocabulary(html, "_attachments.html")
     assert 'data-lucide="paperclip"' in html
     assert "📎" not in html
 
@@ -282,6 +266,6 @@ def test_board_columns_priority_map_resolves_every_priority(env, priority):
         "assignee_type": None,
         "assignee_id": None,
     }]
-    html = _render(env, "issues/_board_columns.html", ctx)
+    html = render(env, "issues/_board_columns.html", ctx)
     assert f"bg-prio-{priority}-bg" in html
     assert f"text-prio-{priority}-fg" in html

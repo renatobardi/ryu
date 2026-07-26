@@ -12,7 +12,7 @@
         {% for k, v in attrs.items() %}{{ k }}="{{ v }}" {% endfor %}>
   {{ caller() if caller is defined }}
   <span id="ws-status" title="conexão realtime"
-        class="text-2xs {{ 'text-emerald-500' if connection == 'connected' else 'text-red-500' if connection == 'disconnected' else 'text-text-faint' }}">●</span>
+        class="text-2xs {{ 'text-success-fg' if connection == 'connected' else 'text-danger-fg' if connection == 'disconnected' else 'text-text-faint' }}">●</span>
   <a href="/w/{{ workspace_slug }}/inbox" class="relative text-sm text-text-muted hover:text-text-body">
     Inbox
     <span class="absolute -top-2 -right-4">

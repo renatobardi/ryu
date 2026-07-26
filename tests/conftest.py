@@ -59,3 +59,48 @@ async def login(client: httpx.AsyncClient, email: str) -> dict:
     if csrf:
         client.headers["X-CSRF-Token"] = csrf
     return data
+
+
+# ── Design system: renderização de template ──────────────────────────────────
+# Cinco arquivos de teste clonaram este scaffolding e as cópias divergiram:
+# cada uma passou a checar uma lista diferente de vocabulário legado, e nenhuma
+# checava a paleta crua do Tailwind. Foi por isso que `text-red-400` e
+# `bg-emerald-600/20` sobreviveram em quatro telas até o code review pegá-los.
+
+import pytest  # noqa: E402
+from jinja2 import Environment, FileSystemLoader, select_autoescape  # noqa: E402
+
+TEMPLATES = Path(__file__).resolve().parents[1] / "src/ryu/web/templates"
+
+#: O que nenhum template pode conter. `zinc`/`violet`/`neutral` são as escalas
+#: que a migração substituiu; `ryu-*` são as classes bespoke aposentadas; a
+#: paleta crua do Tailwind é fixa, enquanto os tokens são calibrados por tema.
+LEGACY_VOCABULARY = (
+    "zinc-", "violet-", "neutral-",
+    "ryu-status-", "ryu-agent-", "ryu-task-", "ryu-sev-",
+    "bg-red-", "text-red-", "border-red-",
+    "bg-emerald-", "text-emerald-", "border-emerald-",
+    "bg-amber-", "text-amber-", "border-amber-",
+    "bg-green-", "text-green-", "bg-yellow-", "text-yellow-",
+    "bg-orange-", "text-orange-", "bg-blue-", "text-blue-",
+)
+
+
+@pytest.fixture(scope="session")
+def env():
+    """Environment Jinja apontando pros templates reais do produto."""
+    return Environment(
+        loader=FileSystemLoader(str(TEMPLATES)),
+        autoescape=select_autoescape(["html"]),
+    )
+
+
+def render(env, template_name: str, ctx: dict | None = None, **kwargs) -> str:
+    """Renderiza um template do produto. Aceita contexto como dict ou kwargs."""
+    return env.get_template(template_name).render(**{**(ctx or {}), **kwargs})
+
+
+def assert_no_legacy_vocabulary(html: str, source: str) -> None:
+    """Falha se o HTML ainda carrega vocabulário de cor que a migração removeu."""
+    for token in LEGACY_VOCABULARY:
+        assert token not in html, f"{token!r} ainda presente em {source}"
