@@ -1,0 +1,8 @@
+/* Ryu v2 — raios. Mais arredondado que o original: estética de assistente de IA. */
+:root{
+--radius-sm:6px;     /* tags, pills quadradas */
+--radius-md:8px;     /* botões, inputs, nav items (default) */
+--radius-lg:12px;    /* cards, painéis, colunas do board */
+--radius-xl:16px;    /* card de login, bolhas de chat, modais */
+--radius-full:9999px; /* pills de status, contadores */
+}

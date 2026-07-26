@@ -1,0 +1,31 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Core" subtitle="Button, Input, Select, Textarea, Card, EmptyState" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>*{box-sizing:border-box}body{margin:0;background:var(--surface-app);color:var(--text-body);font-family:var(--font-sans);padding:16px}a{color:var(--text-accent);text-decoration:none}a:hover{color:var(--violet-300)}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.col{display:flex;flex-direction:column;gap:8px}.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint)}</style>
+</head><body><div id="root"></div><script type="text/babel">const { Button, Input, Select, Textarea, Card, EmptyState } = window.RyuDesignSystem_7ed69e;
+function Demo(){return (<div className="col" style={{gap:14}}>
+  <div className="row">
+    <Button>Criar</Button>
+    <Button variant="secondary">Marcar todas como lidas</Button>
+    <Button variant="outline" size="sm">Filtrar</Button>
+    <Button variant="ghost" size="sm">Lida</Button>
+    <Button variant="link">rodar agora</Button>
+    <Button variant="danger">excluir</Button>
+    <Button disabled>Salvar</Button>
+  </div>
+  <div className="row" style={{gap:8}}>
+    <Input full={false} style={{width:200}} placeholder="Nova issue..." />
+    <Input full={false} size="sm" style={{width:150}} placeholder="Search  ⌘K" />
+    <Input full={false} tone="sunken" style={{width:170}} placeholder="Nome do autopilot" />
+    <Select defaultValue="todo"><option value="backlog">Backlog</option><option value="todo">Todo</option></Select>
+  </div>
+  <div className="row" style={{alignItems:'stretch',gap:12}}>
+    <Textarea rows={2} placeholder="Escreva um comentário..." style={{width:260}} />
+    <Card tone="panel" pad={12} hoverable style={{width:150,fontSize:12,color:'var(--text-muted)'}}>Card · panel</Card>
+    <EmptyState><span>Nenhum agente ainda.</span></EmptyState>
+  </div>
+</div>);}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);</script></body></html>

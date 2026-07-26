@@ -1,0 +1,10 @@
+/* Ryu — profundidade. O produto NÃO usa box-shadow: separação é por borda de 1px
+   e por troca de superfície. Estes tokens existem para manter isso explícito. */
+:root{
+--shadow-none:none;
+--elevation-strategy:border;         /* documental */
+--border-width:1px;
+--focus-ring:0 0 0 1px var(--violet-500); /* o produto só troca a cor da borda no focus */
+--overlay-scrim:rgb(11 11 15 / .8);
+--divider:1px solid var(--border-hairline);
+}

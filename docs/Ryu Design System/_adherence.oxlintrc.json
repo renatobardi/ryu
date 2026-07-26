@@ -1,0 +1,685 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/app/**",
+              "components/core/**",
+              "components/data/**",
+              "ui_kits/ryu-app/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/#[0-9a-fA-F]{3,8}\\b/]",
+        "message": "Raw hex color — use a design-system color token via var()."
+      },
+      {
+        "selector": "Literal[value=/\\b\\d+px\\b/]",
+        "message": "Raw px value — use a design-system spacing token via var()."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AgentCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|handle|runtime|status|description|compact|style|key|ref|className|style|children)$/]",
+        "message": "<AgentCard> doesn't accept that prop. Declared props: name, handle, runtime, status, description, compact, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='AgentCard'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:idle|working|blocked|error|offline)$/]",
+        "message": "<AgentCard> status must be one of 'idle' | 'working' | 'blocked' | 'error' | 'offline'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='BoardColumn'] > JSXAttribute > JSXIdentifier[name!=/^(?:title|count|children|style|key|ref|className|style|children)$/]",
+        "message": "<BoardColumn> doesn't accept that prop. Declared props: title, count, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute > JSXIdentifier[name!=/^(?:variant|size|full|children|key|ref|className|style|children)$/]",
+        "message": "<Button> doesn't accept that prop. Declared props: variant, size, full, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='variant'] > Literal[value!=/^(?:primary|secondary|outline|ghost|link|danger)$/]",
+        "message": "<Button> variant must be one of 'primary' | 'secondary' | 'outline' | 'ghost' | 'link' | 'danger'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Button'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md|lg)$/]",
+        "message": "<Button> size must be one of 'sm' | 'md' | 'lg'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute > JSXIdentifier[name!=/^(?:tone|dashed|hoverable|pad|children|key|ref|className|style|children)$/]",
+        "message": "<Card> doesn't accept that prop. Declared props: tone, dashed, hoverable, pad, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Card'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:panel|raised|muted|bare)$/]",
+        "message": "<Card> tone must be one of 'panel' | 'raised' | 'muted' | 'bare'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ChatBubble'] > JSXAttribute > JSXIdentifier[name!=/^(?:role|children|time|typing|style|key|ref|className|style|children)$/]",
+        "message": "<ChatBubble> doesn't accept that prop. Declared props: role, children, time, typing, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ChatBubble'] > JSXAttribute[name.name='role'] > Literal[value!=/^(?:user|agent|system)$/]",
+        "message": "<ChatBubble> role must be one of 'user' | 'agent' | 'system'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CountBadge'] > JSXAttribute > JSXIdentifier[name!=/^(?:count|tone|hideZero|style|key|ref|className|style|children)$/]",
+        "message": "<CountBadge> doesn't accept that prop. Declared props: count, tone, hideZero, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='CountBadge'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:accent|neutral)$/]",
+        "message": "<CountBadge> tone must be one of 'accent' | 'neutral'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='DataTableColumn'] > JSXAttribute > JSXIdentifier[name!=/^(?:key|label|align|muted|small|mono|maxWidth|key|ref|className|style|children)$/]",
+        "message": "<DataTableColumn> doesn't accept that prop. Declared props: key, label, align, muted, small, mono, maxWidth."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='DataTableColumn'] > JSXAttribute[name.name='align'] > Literal[value!=/^(?:left|right|center)$/]",
+        "message": "<DataTableColumn> align must be one of 'left' | 'right' | 'center'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='EmptyState'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|dashed|pad|key|ref|className|style|children)$/]",
+        "message": "<EmptyState> doesn't accept that prop. Declared props: children, dashed, pad."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Icon'] > JSXAttribute > JSXIdentifier[name!=/^(?:name|size|strokeWidth|style|key|ref|className|style|children)$/]",
+        "message": "<Icon> doesn't accept that prop. Declared props: name, size, strokeWidth, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='InboxItem'] > JSXAttribute > JSXIdentifier[name!=/^(?:severity|title|body|time|read|children|style|key|ref|className|style|children)$/]",
+        "message": "<InboxItem> doesn't accept that prop. Declared props: severity, title, body, time, read, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='InboxItem'] > JSXAttribute[name.name='severity'] > Literal[value!=/^(?:action_required|attention|info)$/]",
+        "message": "<InboxItem> severity must be one of 'action_required' | 'attention' | 'info'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Input'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|tone|full|key|ref|className|style|children)$/]",
+        "message": "<Input> doesn't accept that prop. Declared props: size, tone, full."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Input'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md|lg)$/]",
+        "message": "<Input> size must be one of 'sm' | 'md' | 'lg'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Input'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:raised|sunken)$/]",
+        "message": "<Input> tone must be one of 'raised' | 'sunken'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='IssueCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:issueKey|title|priority|assignee|assigneeType|onClick|style|key|ref|className|style|children)$/]",
+        "message": "<IssueCard> doesn't accept that prop. Declared props: issueKey, title, priority, assignee, assigneeType, onClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='IssueCard'] > JSXAttribute[name.name='priority'] > Literal[value!=/^(?:urgent|high|medium|low|none)$/]",
+        "message": "<IssueCard> priority must be one of 'urgent' | 'high' | 'medium' | 'low' | 'none'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='IssueCard'] > JSXAttribute[name.name='assigneeType'] > Literal[value!=/^(?:agent|member)$/]",
+        "message": "<IssueCard> assigneeType must be one of 'agent' | 'member'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='IssueKey'] > JSXAttribute > JSXIdentifier[name!=/^(?:children|style|key|ref|className|style|children)$/]",
+        "message": "<IssueKey> doesn't accept that prop. Declared props: children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='NavItem'] > JSXAttribute > JSXIdentifier[name!=/^(?:icon|label|active|count|key|ref|className|style|children)$/]",
+        "message": "<NavItem> doesn't accept that prop. Declared props: icon, label, active, count."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PriorityTag'] > JSXAttribute > JSXIdentifier[name!=/^(?:priority|style|key|ref|className|style|children)$/]",
+        "message": "<PriorityTag> doesn't accept that prop. Declared props: priority, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='PriorityTag'] > JSXAttribute[name.name='priority'] > Literal[value!=/^(?:urgent|high|medium|low|none)$/]",
+        "message": "<PriorityTag> priority must be one of 'urgent' | 'high' | 'medium' | 'low' | 'none'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Select'] > JSXAttribute > JSXIdentifier[name!=/^(?:size|tone|full|children|key|ref|className|style|children)$/]",
+        "message": "<Select> doesn't accept that prop. Declared props: size, tone, full, children."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Select'] > JSXAttribute[name.name='size'] > Literal[value!=/^(?:sm|md)$/]",
+        "message": "<Select> size must be one of 'sm' | 'md'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Select'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:raised|sunken)$/]",
+        "message": "<Select> tone must be one of 'raised' | 'sunken'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Sidebar'] > JSXAttribute > JSXIdentifier[name!=/^(?:user|onSearch|children|onProfileClick|style|key|ref|className|style|children)$/]",
+        "message": "<Sidebar> doesn't accept that prop. Declared props: user, onSearch, children, onProfileClick, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatCard'] > JSXAttribute > JSXIdentifier[name!=/^(?:value|label|status|accent|hoverable|style|key|ref|className|style|children)$/]",
+        "message": "<StatCard> doesn't accept that prop. Declared props: value, label, status, accent, hoverable, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatCard'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:backlog|todo|in_progress|in_review|done|blocked|cancelled)$/]",
+        "message": "<StatCard> status must be one of 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done' | 'blocked' | 'cancelled'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusDot'] > JSXAttribute > JSXIdentifier[name!=/^(?:status|size|style|key|ref|className|style|children)$/]",
+        "message": "<StatusDot> doesn't accept that prop. Declared props: status, size, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusDot'] > JSXAttribute[name.name='status'] > Literal[value!=/^(?:backlog|todo|in_progress|in_review|done|blocked|cancelled)$/]",
+        "message": "<StatusDot> status must be one of 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'done' | 'blocked' | 'cancelled'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusPill'] > JSXAttribute > JSXIdentifier[name!=/^(?:kind|status|children|style|key|ref|className|style|children)$/]",
+        "message": "<StatusPill> doesn't accept that prop. Declared props: kind, status, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='StatusPill'] > JSXAttribute[name.name='kind'] > Literal[value!=/^(?:agent|task|severity|state|neutral)$/]",
+        "message": "<StatusPill> kind must be one of 'agent' | 'task' | 'severity' | 'state' | 'neutral'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Textarea'] > JSXAttribute > JSXIdentifier[name!=/^(?:tone|mono|key|ref|className|style|children)$/]",
+        "message": "<Textarea> doesn't accept that prop. Declared props: tone, mono."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='Textarea'] > JSXAttribute[name.name='tone'] > Literal[value!=/^(?:raised|sunken)$/]",
+        "message": "<Textarea> tone must be one of 'raised' | 'sunken'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ThemeToggle'] > JSXAttribute > JSXIdentifier[name!=/^(?:theme|onChange|style|key|ref|className|style|children)$/]",
+        "message": "<ThemeToggle> doesn't accept that prop. Declared props: theme, onChange, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='ThemeToggle'] > JSXAttribute[name.name='theme'] > Literal[value!=/^(?:light|dark)$/]",
+        "message": "<ThemeToggle> theme must be one of 'light' | 'dark'."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TopBar'] > JSXAttribute > JSXIdentifier[name!=/^(?:connection|inboxCount|children|style|key|ref|className|style|children)$/]",
+        "message": "<TopBar> doesn't accept that prop. Declared props: connection, inboxCount, children, style."
+      },
+      {
+        "selector": "JSXOpeningElement[name.name='TopBar'] > JSXAttribute[name.name='connection'] > Literal[value!=/^(?:connected|disconnected|connecting)$/]",
+        "message": "<TopBar> connection must be one of 'connected' | 'disconnected' | 'connecting'."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "AgentCard": {
+        "replaces": []
+      },
+      "BoardColumn": {
+        "replaces": []
+      },
+      "Button": {
+        "replaces": []
+      },
+      "Card": {
+        "replaces": []
+      },
+      "ChatBubble": {
+        "replaces": []
+      },
+      "CountBadge": {
+        "replaces": []
+      },
+      "DataTableColumn": {
+        "replaces": []
+      },
+      "EmptyState": {
+        "replaces": []
+      },
+      "Icon": {
+        "replaces": []
+      },
+      "InboxItem": {
+        "replaces": []
+      },
+      "Input": {
+        "replaces": []
+      },
+      "IssueCard": {
+        "replaces": []
+      },
+      "IssueKey": {
+        "replaces": []
+      },
+      "NavItem": {
+        "replaces": []
+      },
+      "PriorityTag": {
+        "replaces": []
+      },
+      "Select": {
+        "replaces": []
+      },
+      "Sidebar": {
+        "replaces": []
+      },
+      "StatCard": {
+        "replaces": []
+      },
+      "StatusDot": {
+        "replaces": []
+      },
+      "StatusPill": {
+        "replaces": []
+      },
+      "Textarea": {
+        "replaces": []
+      },
+      "ThemeToggle": {
+        "replaces": []
+      },
+      "TopBar": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--accent",
+      "--accent-hover",
+      "--accent-selection",
+      "--agent-blocked-bg",
+      "--agent-blocked-fg",
+      "--agent-error-bg",
+      "--agent-error-fg",
+      "--agent-idle-bg",
+      "--agent-idle-fg",
+      "--agent-offline-bg",
+      "--agent-offline-fg",
+      "--agent-working-bg",
+      "--agent-working-fg",
+      "--amber-400",
+      "--amber-500",
+      "--animate-pulse",
+      "--blue-400",
+      "--blue-500",
+      "--board-column-width",
+      "--border-default",
+      "--border-focus",
+      "--border-hairline",
+      "--border-hover",
+      "--border-soft",
+      "--border-strong",
+      "--border-width",
+      "--card-pad",
+      "--card-shadow",
+      "--chat-bubble-agent-bg",
+      "--chat-bubble-agent-fg",
+      "--chat-bubble-system-bg",
+      "--chat-bubble-system-fg",
+      "--chat-list-bg",
+      "--chat-list-width",
+      "--chat-panel-bg",
+      "--content-max",
+      "--control-pad-x",
+      "--control-pad-x-sm",
+      "--control-pad-y",
+      "--control-pad-y-sm",
+      "--divider",
+      "--duration-base",
+      "--duration-fast",
+      "--ease-in",
+      "--ease-out",
+      "--elevation-strategy",
+      "--emerald-400",
+      "--emerald-500",
+      "--emerald-600",
+      "--focus-ring",
+      "--font-mono",
+      "--font-sans",
+      "--form-max",
+      "--gray-0",
+      "--gray-100",
+      "--gray-150",
+      "--gray-200",
+      "--gray-300",
+      "--gray-400",
+      "--gray-50",
+      "--gray-500",
+      "--gray-600",
+      "--gray-700",
+      "--gray-800",
+      "--gray-900",
+      "--gray-950",
+      "--green-400",
+      "--green-500",
+      "--indigo-100",
+      "--indigo-400",
+      "--indigo-500",
+      "--indigo-600",
+      "--indigo-700",
+      "--issue-sidebar-width",
+      "--leading-none",
+      "--leading-normal",
+      "--leading-snug",
+      "--opacity-loading",
+      "--orange-400",
+      "--orange-500",
+      "--overlay-scrim",
+      "--page-padding",
+      "--pill-pad-x",
+      "--pill-pad-y",
+      "--prio-high-bg",
+      "--prio-high-fg",
+      "--prio-low-bg",
+      "--prio-low-fg",
+      "--prio-medium-bg",
+      "--prio-medium-fg",
+      "--prio-urgent-bg",
+      "--prio-urgent-fg",
+      "--radius-full",
+      "--radius-lg",
+      "--radius-md",
+      "--radius-sm",
+      "--radius-xl",
+      "--red-400",
+      "--red-500",
+      "--red-600",
+      "--scrollbar-thumb",
+      "--scrollbar-thumb-hover",
+      "--sev-action-required-bg",
+      "--sev-action-required-fg",
+      "--sev-attention-bg",
+      "--sev-attention-fg",
+      "--sev-info-bg",
+      "--sev-info-fg",
+      "--shadow-none",
+      "--sidebar-width",
+      "--space-0",
+      "--space-0-5",
+      "--space-1",
+      "--space-1-5",
+      "--space-10",
+      "--space-12",
+      "--space-2",
+      "--space-2-5",
+      "--space-3",
+      "--space-3-5",
+      "--space-4",
+      "--space-5",
+      "--space-6",
+      "--space-8",
+      "--state-off-bg",
+      "--state-off-fg",
+      "--state-on-bg",
+      "--state-on-fg",
+      "--status-backlog",
+      "--status-blocked",
+      "--status-cancelled",
+      "--status-done",
+      "--status-in-progress",
+      "--status-in-review",
+      "--status-todo",
+      "--surface-active",
+      "--surface-app",
+      "--surface-card",
+      "--surface-chrome",
+      "--surface-column",
+      "--surface-hover",
+      "--surface-input",
+      "--surface-input-alt",
+      "--surface-raised",
+      "--surface-sunken",
+      "--task-cancelled-bg",
+      "--task-cancelled-fg",
+      "--task-completed-bg",
+      "--task-completed-fg",
+      "--task-dispatched-bg",
+      "--task-dispatched-fg",
+      "--task-failed-bg",
+      "--task-failed-fg",
+      "--task-queued-bg",
+      "--task-queued-fg",
+      "--task-running-bg",
+      "--task-running-fg",
+      "--text-11",
+      "--text-2xl",
+      "--text-2xs",
+      "--text-accent",
+      "--text-base",
+      "--text-body",
+      "--text-faint",
+      "--text-lg",
+      "--text-muted",
+      "--text-on-accent",
+      "--text-primary",
+      "--text-secondary",
+      "--text-sm",
+      "--text-subtle",
+      "--text-xl",
+      "--text-xs",
+      "--topbar-height",
+      "--tracking-code",
+      "--tracking-wide",
+      "--tracking-wider",
+      "--transition-swap",
+      "--type-body",
+      "--type-key",
+      "--type-meta",
+      "--type-page-title",
+      "--type-pill",
+      "--type-section-label",
+      "--weight-bold",
+      "--weight-medium",
+      "--weight-normal",
+      "--weight-semibold",
+      "--yellow-400",
+      "--yellow-500"
+    ],
+    "tokenKinds": {
+      "--gray-950": "color",
+      "--gray-900": "color",
+      "--gray-800": "color",
+      "--gray-700": "color",
+      "--gray-600": "color",
+      "--gray-500": "color",
+      "--gray-400": "color",
+      "--gray-300": "color",
+      "--gray-200": "color",
+      "--gray-150": "color",
+      "--gray-100": "color",
+      "--gray-50": "color",
+      "--gray-0": "color",
+      "--indigo-700": "color",
+      "--indigo-600": "color",
+      "--indigo-500": "color",
+      "--indigo-400": "color",
+      "--indigo-100": "color",
+      "--emerald-600": "color",
+      "--emerald-500": "color",
+      "--emerald-400": "color",
+      "--green-500": "color",
+      "--green-400": "color",
+      "--red-600": "color",
+      "--red-500": "color",
+      "--red-400": "color",
+      "--amber-500": "color",
+      "--amber-400": "color",
+      "--yellow-500": "color",
+      "--yellow-400": "color",
+      "--orange-500": "color",
+      "--orange-400": "color",
+      "--blue-500": "color",
+      "--blue-400": "color",
+      "--surface-app": "color",
+      "--surface-chrome": "color",
+      "--surface-card": "color",
+      "--surface-raised": "color",
+      "--surface-sunken": "color",
+      "--surface-input": "color",
+      "--surface-input-alt": "color",
+      "--surface-column": "color",
+      "--surface-hover": "color",
+      "--surface-active": "color",
+      "--border-default": "color",
+      "--border-soft": "color",
+      "--border-hairline": "color",
+      "--border-strong": "color",
+      "--border-hover": "color",
+      "--border-focus": "color",
+      "--text-primary": "font",
+      "--text-body": "font",
+      "--text-secondary": "font",
+      "--text-muted": "font",
+      "--text-subtle": "font",
+      "--text-faint": "font",
+      "--text-accent": "font",
+      "--text-on-accent": "font",
+      "--accent": "color",
+      "--accent-hover": "color",
+      "--accent-selection": "color",
+      "--card-shadow": "shadow",
+      "--status-backlog": "color",
+      "--status-todo": "color",
+      "--status-in-progress": "color",
+      "--status-in-review": "color",
+      "--status-done": "color",
+      "--status-blocked": "color",
+      "--status-cancelled": "color",
+      "--agent-idle-bg": "color",
+      "--agent-idle-fg": "color",
+      "--agent-working-bg": "color",
+      "--agent-working-fg": "color",
+      "--agent-blocked-bg": "color",
+      "--agent-blocked-fg": "color",
+      "--agent-error-bg": "color",
+      "--agent-error-fg": "color",
+      "--agent-offline-bg": "color",
+      "--agent-offline-fg": "color",
+      "--task-queued-bg": "color",
+      "--task-queued-fg": "color",
+      "--task-dispatched-bg": "color",
+      "--task-dispatched-fg": "color",
+      "--task-running-bg": "color",
+      "--task-running-fg": "color",
+      "--task-completed-bg": "color",
+      "--task-completed-fg": "color",
+      "--task-failed-bg": "color",
+      "--task-failed-fg": "color",
+      "--task-cancelled-bg": "color",
+      "--task-cancelled-fg": "color",
+      "--sev-action-required-bg": "color",
+      "--sev-action-required-fg": "color",
+      "--sev-attention-bg": "color",
+      "--sev-attention-fg": "color",
+      "--sev-info-bg": "color",
+      "--sev-info-fg": "color",
+      "--prio-urgent-bg": "color",
+      "--prio-urgent-fg": "color",
+      "--prio-high-bg": "color",
+      "--prio-high-fg": "color",
+      "--prio-medium-bg": "color",
+      "--prio-medium-fg": "color",
+      "--prio-low-bg": "color",
+      "--prio-low-fg": "color",
+      "--state-on-bg": "color",
+      "--state-on-fg": "color",
+      "--state-off-bg": "color",
+      "--state-off-fg": "color",
+      "--scrollbar-thumb": "color",
+      "--scrollbar-thumb-hover": "color",
+      "--chat-bubble-agent-bg": "color",
+      "--chat-bubble-agent-fg": "color",
+      "--chat-bubble-system-bg": "color",
+      "--chat-bubble-system-fg": "color",
+      "--chat-list-bg": "color",
+      "--chat-panel-bg": "color",
+      "--font-sans": "font",
+      "--font-mono": "font",
+      "--text-2xs": "font",
+      "--text-11": "font",
+      "--text-xs": "font",
+      "--text-sm": "font",
+      "--text-base": "font",
+      "--text-lg": "font",
+      "--text-xl": "font",
+      "--text-2xl": "font",
+      "--leading-none": "font",
+      "--leading-snug": "font",
+      "--leading-normal": "font",
+      "--weight-normal": "font",
+      "--weight-medium": "font",
+      "--weight-semibold": "font",
+      "--weight-bold": "font",
+      "--tracking-wide": "font",
+      "--tracking-wider": "font",
+      "--tracking-code": "font",
+      "--type-page-title": "font",
+      "--type-section-label": "font",
+      "--type-body": "font",
+      "--type-meta": "font",
+      "--type-pill": "font",
+      "--type-key": "font",
+      "--space-0": "spacing",
+      "--space-0-5": "spacing",
+      "--space-1": "spacing",
+      "--space-1-5": "spacing",
+      "--space-2": "spacing",
+      "--space-2-5": "spacing",
+      "--space-3": "spacing",
+      "--space-3-5": "spacing",
+      "--space-4": "spacing",
+      "--space-5": "spacing",
+      "--space-6": "spacing",
+      "--space-8": "spacing",
+      "--space-10": "spacing",
+      "--space-12": "spacing",
+      "--sidebar-width": "spacing",
+      "--chat-list-width": "spacing",
+      "--topbar-height": "spacing",
+      "--board-column-width": "spacing",
+      "--issue-sidebar-width": "spacing",
+      "--content-max": "spacing",
+      "--form-max": "spacing",
+      "--page-padding": "spacing",
+      "--control-pad-y": "spacing",
+      "--control-pad-x": "spacing",
+      "--control-pad-y-sm": "spacing",
+      "--control-pad-x-sm": "spacing",
+      "--card-pad": "spacing",
+      "--pill-pad-y": "spacing",
+      "--pill-pad-x": "spacing",
+      "--radius-sm": "radius",
+      "--radius-md": "radius",
+      "--radius-lg": "radius",
+      "--radius-xl": "radius",
+      "--radius-full": "radius",
+      "--shadow-none": "shadow",
+      "--elevation-strategy": "shadow",
+      "--border-width": "spacing",
+      "--focus-ring": "color",
+      "--overlay-scrim": "color",
+      "--divider": "color",
+      "--duration-fast": "other",
+      "--duration-base": "other",
+      "--ease-out": "other",
+      "--ease-in": "other",
+      "--opacity-loading": "other",
+      "--transition-swap": "color",
+      "--animate-pulse": "other"
+    },
+    "fontFamilies": []
+  }
+}
