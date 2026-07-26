@@ -1,15 +1,7 @@
 """Feature flags do Ryu — port funcional de server/pkg/featureflag do multica.
 
-Cadeia de providers (precedência: env > arquivo > defaults em código):
+Cadeia de providers (precedência: env > defaults em código):
 - Env: FF_<KEY>=true|false|42%|<variant> (KEY em UPPER_SNAKE do nome da flag).
-- Arquivo YAML opcional (settings.feature_flags_file, env RYU_FEATURE_FLAGS_FILE):
-    flags:
-      minha_flag: true                  # forma curta
-      outra_flag:
-        variant: "true" | "false" | "beta"
-        percent: 42                     # rollout percentual determinístico
-        allow: [user_id, workspace_id]  # sempre on para esses sujeitos
-        deny:  [user_id]                # sempre off (vence o allow)
 - Defaults em código (DEFAULT_FLAGS).
 
 Percent rollout: hash determinístico (sha256) de "key:subject" → bucket 0..99;
@@ -26,12 +18,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-from pathlib import Path
-from typing import Any
-
-import structlog
-
-log = structlog.get_logger("ryu.featureflags")
 
 # defaults em código (multica server/internal/featureflags/keys.go)
 DEFAULT_FLAGS: dict[str, str] = {
@@ -71,10 +57,6 @@ def _parse_value(raw: str) -> dict:
 
 
 class FeatureFlagService:
-    def __init__(self) -> None:
-        self._file_flags: dict[str, dict] | None = None
-        self._file_path: str | None = None
-
     # ── Providers ─────────────────────────────────────────────────────
     def _env_lookup(self, key: str) -> dict | None:
         raw = os.environ.get(f"FF_{key.upper()}")
@@ -82,58 +64,11 @@ class FeatureFlagService:
             return None
         return _parse_value(raw)
 
-    def _load_file(self) -> dict[str, dict]:
-        from ryu.config import settings
-
-        path = getattr(settings, "feature_flags_file", None)
-        path_str = str(path) if path else None
-        if self._file_flags is not None and self._file_path == path_str:
-            return self._file_flags
-        flags: dict[str, dict] = {}
-        if path_str and Path(path_str).exists():
-            try:
-                import yaml
-
-                data = yaml.safe_load(Path(path_str).read_text(encoding="utf-8")) or {}
-                raw_flags = data.get("flags", data) if isinstance(data, dict) else {}
-                for k, v in (raw_flags or {}).items():
-                    if isinstance(v, dict):
-                        entry: dict[str, Any] = {}
-                        if "variant" in v:
-                            entry.update(_parse_value(str(v["variant"])))
-                        if "percent" in v:
-                            try:
-                                entry["percent"] = max(0, min(100, int(v["percent"])))
-                            except (TypeError, ValueError):
-                                pass
-                        entry["allow"] = [str(x) for x in (v.get("allow") or [])]
-                        entry["deny"] = [str(x) for x in (v.get("deny") or [])]
-                        flags[str(k)] = entry
-                    elif isinstance(v, bool):
-                        flags[str(k)] = {"variant": "true" if v else "false"}
-                    else:
-                        flags[str(k)] = _parse_value(str(v))
-                log.info("feature_flags_file_loaded", path=path_str, flags=len(flags))
-            except Exception:
-                log.warning("feature_flags_file_invalid", path=path_str)
-        elif path_str:
-            log.warning("feature_flags_file_missing", path=path_str)
-        self._file_flags = flags
-        self._file_path = path_str
-        return flags
-
-    def reload(self) -> None:
-        """Invalida o cache do arquivo (testes / SIGHUP-like)."""
-        self._file_flags = None
-
     # ── Avaliação ─────────────────────────────────────────────────────
     def decision(self, key: str, *, subject: str = "", default: bool = False) -> dict:
         """Decisão estruturada: {enabled, variant, source, reason}."""
         entry = self._env_lookup(key)
         source = "env"
-        if entry is None:
-            entry = self._load_file().get(key)
-            source = "file"
         if entry is None:
             if key in DEFAULT_FLAGS:
                 entry = _parse_value(DEFAULT_FLAGS[key])
@@ -146,10 +81,6 @@ class FeatureFlagService:
                     "reason": "missing",
                 }
         subj = subject or "global"
-        if subj in (entry.get("deny") or []):
-            return {"enabled": False, "variant": "false", "source": source, "reason": "deny"}
-        if subj in (entry.get("allow") or []):
-            return {"enabled": True, "variant": "true", "source": source, "reason": "allow"}
         if "percent" in entry:
             on = _percent_bucket(key, subj) < entry["percent"]
             return {
