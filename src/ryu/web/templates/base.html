@@ -36,18 +36,20 @@
       </div>
     </div>
 
+    <div class="px-2 pt-3 space-y-2">
+      <form action="/w/{{ workspace.slug }}/search" method="get">
+        <input id="sidebar-search" name="q" placeholder="Search  ⌘K"
+               hx-get="/w/{{ workspace.slug }}/search" hx-trigger="keyup changed delay:400ms" hx-target="#search-results" hx-push-url="true"
+               class="w-full bg-zinc-900 border border-zinc-800 rounded-md px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-violet-600">
+      </form>
+      <a href="/w/{{ workspace.slug }}/board#new-issue"
+         class="flex items-center justify-center gap-1.5 w-full bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium rounded-md py-1.5">
+        <span>＋</span><span>New Issue</span>
+      </a>
+    </div>
+
     <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-0.5 text-sm">
-      {% set nav = [
-        ('board',      'Issues / Board', '/w/' ~ workspace.slug ~ '/board',      '▦'),
-        ('agents',     'Agents',         '/w/' ~ workspace.slug ~ '/agents',     '🤖'),
-        ('chat',       'Chat',           '/w/' ~ workspace.slug ~ '/chat',       '💬'),
-        ('autopilots', 'Autopilots',     '/w/' ~ workspace.slug ~ '/autopilots', '⚡'),
-        ('skills',     'Skills',         '/w/' ~ workspace.slug ~ '/skills',     '📚'),
-        ('squads',     'Squads',         '/w/' ~ workspace.slug ~ '/squads',     '👥'),
-        ('inbox',      'Inbox',          '/w/' ~ workspace.slug ~ '/inbox',      '📥'),
-        ('usage',      'Usage',          '/w/' ~ workspace.slug ~ '/usage',      '📊'),
-      ] %}
-      {% for key, label, href, icon in nav %}
+      {% macro nav_item(key, label, href, icon) %}
       <a href="{{ href }}"
          class="flex items-center gap-2.5 px-3 py-1.5 rounded-md
                 {% if active_nav is defined and active_nav == key %}bg-zinc-800/80 text-zinc-100{% else %}text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200{% endif %}">
@@ -58,7 +60,24 @@
               class="hidden text-[10px] font-semibold bg-violet-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center"></span>
         {% endif %}
       </a>
-      {% endfor %}
+      {% endmacro %}
+
+      {{ nav_item('inbox',     'Inbox',     '/w/' ~ workspace.slug ~ '/inbox',     '📥') }}
+      {{ nav_item('chat',      'Chat',      '/w/' ~ workspace.slug ~ '/chat',      '💬') }}
+      {{ nav_item('my_issues', 'My Issues', '/w/' ~ workspace.slug ~ '/my-issues', '👤') }}
+
+      <div class="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wider text-zinc-600">Workspace</div>
+      {{ nav_item('board',      'Issues',     '/w/' ~ workspace.slug ~ '/board',      '▦') }}
+      {{ nav_item('projects',   'Projects',   '/w/' ~ workspace.slug ~ '/projects',   '📁') }}
+      {{ nav_item('autopilots', 'Autopilots', '/w/' ~ workspace.slug ~ '/autopilots', '⚡') }}
+      {{ nav_item('agents',     'Agents',     '/w/' ~ workspace.slug ~ '/agents',     '🤖') }}
+      {{ nav_item('squads',     'Squads',     '/w/' ~ workspace.slug ~ '/squads',     '👥') }}
+      {{ nav_item('usage',      'Usage',      '/w/' ~ workspace.slug ~ '/usage',      '📊') }}
+
+      <div class="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wider text-zinc-600">Configure</div>
+      {{ nav_item('runtimes', 'Runtimes', '/w/' ~ workspace.slug ~ '/runtimes', '🧩') }}
+      {{ nav_item('skills',   'Skills',   '/w/' ~ workspace.slug ~ '/skills',   '📚') }}
+      {{ nav_item('settings', 'Settings', '/w/' ~ workspace.slug ~ '/settings', '⚙️') }}
     </nav>
 
     <div class="px-4 py-3 border-t border-zinc-800/70 flex items-center justify-between gap-2">
@@ -93,6 +112,14 @@
 </div>
 
 <script>
+// ⌘K / Ctrl+K foca a busca da sidebar
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    const el = document.getElementById('sidebar-search');
+    if (el) { e.preventDefault(); el.focus(); el.select(); }
+  }
+});
+
 async function ryuLogout() {
   try { await fetch('/api/auth/logout', {method: 'POST'}); } catch (e) {}
   window.location.href = '/login';

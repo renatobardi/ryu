@@ -53,6 +53,7 @@ class IssueCreate(BaseModel):
     assignee_type: str | None = None
     assignee_id: str | None = None
     parent_issue_id: str | None = None
+    project_id: str | None = None
     label_ids: list[str] | None = None
 
 
@@ -64,6 +65,7 @@ class IssueUpdate(BaseModel):
     assignee_type: str | None = None
     assignee_id: str | None = None
     parent_issue_id: str | None = None
+    project_id: str | None = None
     position: float | None = None
     due_date: datetime | None = None
     # marca quais campos vieram no payload (model_fields_set)
@@ -171,6 +173,7 @@ async def create_issue(
             assignee_type=payload.assignee_type,
             assignee_id=payload.assignee_id,
             parent_issue_id=payload.parent_issue_id,
+            project_id=payload.project_id,
             label_ids=payload.label_ids,
         )
     except svc.IssueError as e:
@@ -186,6 +189,7 @@ async def list_issues(
     assignee_id: str | None = None,
     label_id: str | None = None,
     parent_issue_id: str | None = None,
+    project_id: str | None = None,
     q: str | None = None,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(current_user),
@@ -198,6 +202,7 @@ async def list_issues(
         assignee_id=assignee_id,
         label_id=label_id,
         parent_issue_id=parent_issue_id,
+        project_id=project_id,
         q=q,
     )
     return [svc.issue_to_dict(i) for i in items]

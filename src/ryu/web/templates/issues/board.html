@@ -7,10 +7,10 @@
       <h1 class="text-lg font-semibold text-zinc-100">{{ workspace.name }}</h1>
       <span class="text-xs text-zinc-500 uppercase tracking-wide">Board</span>
     </div>
-    <form hx-post="/w/{{ workspace.slug }}/board/issues"
+    <form id="new-issue" hx-post="/w/{{ workspace.slug }}/board/issues"
           hx-target="#board-columns" hx-swap="outerHTML"
           class="flex items-center gap-2">
-      <input name="title" required placeholder="Nova issue..."
+      <input name="title" id="new-issue-title" required placeholder="Nova issue..."
              class="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-500 w-64">
       <select name="status" class="bg-zinc-900 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-300">
         {% for st in column_order %}

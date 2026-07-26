@@ -76,6 +76,16 @@ class ApiToken(Base, TimestampMixin):
     revoked: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+# ── Projects ──────────────────────────────────────────────────────────
+class Project(Base, TimestampMixin):
+    __tablename__ = "project"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=uid)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspace.id"), index=True)
+    name: Mapped[str] = mapped_column(String)
+    description: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String, default="active")  # active|archived
+
+
 # ── Tracker ───────────────────────────────────────────────────────────
 class Issue(Base, TimestampMixin):
     __tablename__ = "issue"
@@ -92,6 +102,7 @@ class Issue(Base, TimestampMixin):
     creator_type: Mapped[str] = mapped_column(String, default="member")
     creator_id: Mapped[str] = mapped_column(String)
     parent_issue_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    project_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     position: Mapped[float] = mapped_column(Float, default=0.0)
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     meta: Mapped[dict] = mapped_column(JSON, default=dict)  # KV usado por agentes

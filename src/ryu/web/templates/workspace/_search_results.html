@@ -1,0 +1,42 @@
+<div id="search-results">
+  {% if not q %}
+  <p class="text-sm text-zinc-500">Digite algo para buscar issues, agents e conversas.</p>
+  {% else %}
+  <h2 class="text-xs uppercase tracking-wider text-zinc-500 mb-2">Issues ({{ issues|length }})</h2>
+  <div class="divide-y divide-zinc-800/60 border border-zinc-800 rounded-lg bg-zinc-900 mb-6">
+    {% for i in issues %}
+    <a href="/w/{{ workspace.slug }}/issues/{{ i.key }}" class="flex items-center gap-3 px-4 py-2 hover:bg-zinc-800/40">
+      <span class="text-xs text-zinc-500 w-20 shrink-0">{{ i.key }}</span>
+      <span class="text-sm text-zinc-200 flex-1 truncate">{{ i.title }}</span>
+      <span class="text-[10px] text-zinc-400 bg-zinc-800 rounded px-1.5 py-0.5">{{ status_titles.get(i.status, i.status) }}</span>
+    </a>
+    {% else %}
+    <p class="px-4 py-3 text-sm text-zinc-500">Nenhuma issue encontrada.</p>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-xs uppercase tracking-wider text-zinc-500 mb-2">Agents ({{ agents|length }})</h2>
+  <div class="divide-y divide-zinc-800/60 border border-zinc-800 rounded-lg bg-zinc-900 mb-6">
+    {% for a in agents %}
+    <a href="/w/{{ workspace.slug }}/agents" class="flex items-center gap-3 px-4 py-2 hover:bg-zinc-800/40">
+      <span class="text-sm text-zinc-200 flex-1">{{ a.name }}</span>
+      <span class="text-xs text-zinc-500">@{{ a.handle }}</span>
+      <span class="text-[10px] text-zinc-400 bg-zinc-800 rounded px-1.5 py-0.5">{{ a.status }}</span>
+    </a>
+    {% else %}
+    <p class="px-4 py-3 text-sm text-zinc-500">Nenhum agent encontrado.</p>
+    {% endfor %}
+  </div>
+
+  <h2 class="text-xs uppercase tracking-wider text-zinc-500 mb-2">Chats ({{ chats|length }})</h2>
+  <div class="divide-y divide-zinc-800/60 border border-zinc-800 rounded-lg bg-zinc-900">
+    {% for c in chats %}
+    <a href="/w/{{ workspace.slug }}/chat/{{ c.id }}" class="flex items-center gap-3 px-4 py-2 hover:bg-zinc-800/40">
+      <span class="text-sm text-zinc-200 flex-1 truncate">{{ c.title }}</span>
+    </a>
+    {% else %}
+    <p class="px-4 py-3 text-sm text-zinc-500">Nenhuma conversa encontrada.</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>

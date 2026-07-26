@@ -22,3 +22,12 @@ async def init_db() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Migração leve p/ DBs existentes (create_all não altera tabelas já criadas)
+    from sqlalchemy import text
+
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("ALTER TABLE issue ADD COLUMN project_id VARCHAR"))
+    except Exception:
+        pass  # coluna já existe

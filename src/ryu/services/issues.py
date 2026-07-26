@@ -20,6 +20,7 @@ from ryu.models import (
     Issue,
     IssueLabel,
     Label,
+    Project,
     Workspace,
 )
 from ryu.realtime.hub import hub
@@ -74,6 +75,7 @@ def issue_to_dict(issue: Issue, labels: list[Label] | None = None) -> dict:
         "creator_type": issue.creator_type,
         "creator_id": issue.creator_id,
         "parent_issue_id": issue.parent_issue_id,
+        "project_id": issue.project_id,
         "position": issue.position,
         "due_date": issue.due_date.isoformat() if issue.due_date else None,
         "meta": issue.meta or {},
@@ -211,6 +213,7 @@ async def create_issue(
     assignee_type: str | None = None,
     assignee_id: str | None = None,
     parent_issue_id: str | None = None,
+    project_id: str | None = None,
     label_ids: Sequence[str] | None = None,
 ) -> Issue:
     if not title.strip():
@@ -227,6 +230,10 @@ async def create_issue(
         parent = await get_issue(db, parent_issue_id)
         if parent.workspace_id != workspace_id:
             raise IssueError("parent_issue de outro workspace")
+    if project_id:
+        project = await db.get(Project, project_id)
+        if project is None or project.workspace_id != workspace_id:
+            raise IssueError("project não encontrado neste workspace", 404)
 
     await get_workspace(db, workspace_id)
     key = await _next_key(db, workspace_id)
@@ -243,6 +250,7 @@ async def create_issue(
         creator_type=actor_type,
         creator_id=actor_id,
         parent_issue_id=parent_issue_id,
+        project_id=project_id or None,
         position=position,
         meta={},
     )
@@ -273,6 +281,7 @@ async def list_issues(
     assignee_id: str | None = None,
     label_id: str | None = None,
     parent_issue_id: str | None = None,
+    project_id: str | None = None,
     q: str | None = None,
 ) -> list[Issue]:
     stmt = select(Issue).where(Issue.workspace_id == workspace_id)
@@ -284,6 +293,8 @@ async def list_issues(
         stmt = stmt.where(Issue.assignee_id == assignee_id)
     if parent_issue_id:
         stmt = stmt.where(Issue.parent_issue_id == parent_issue_id)
+    if project_id:
+        stmt = stmt.where(Issue.project_id == project_id)
     if label_id:
         stmt = stmt.join(IssueLabel, IssueLabel.issue_id == Issue.id).where(IssueLabel.label_id == label_id)
     if q:
@@ -346,6 +357,14 @@ async def update_issue(
                 raise IssueError("parent_issue de outro workspace")
         payload["parent_issue_id"] = {"from": issue.parent_issue_id, "to": pid}
         issue.parent_issue_id = pid
+    if "project_id" in changes:
+        prj_id = changes["project_id"] or None
+        if prj_id:
+            project = await db.get(Project, prj_id)
+            if project is None or project.workspace_id != issue.workspace_id:
+                raise IssueError("project não encontrado neste workspace", 404)
+        payload["project_id"] = {"from": issue.project_id, "to": prj_id}
+        issue.project_id = prj_id
     if "due_date" in changes:
         issue.due_date = changes["due_date"]
         payload["due_date"] = str(changes["due_date"]) if changes["due_date"] else None

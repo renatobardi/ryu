@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ workspace.name }} — Projects{% endblock %}
+{% block content %}
+<div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+  <div>
+    <h1 class="text-lg font-semibold text-zinc-100">Projects</h1>
+    <p class="text-xs text-zinc-500 mt-0.5">{{ projects|length }} projeto(s)</p>
+  </div>
+</div>
+
+<div class="px-6 py-4">
+  <form method="post" action="/w/{{ workspace.slug }}/projects" class="flex gap-2 mb-6">
+    <input name="name" required placeholder="Nome do projeto"
+           class="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-sm w-64 focus:outline-none focus:border-violet-600">
+    <input name="description" placeholder="Descrição (opcional)"
+           class="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-1.5 text-sm flex-1 focus:outline-none focus:border-violet-600">
+    <button class="bg-violet-600 hover:bg-violet-500 text-white text-sm px-4 py-1.5 rounded-md">Criar projeto</button>
+  </form>
+
+  <div class="grid grid-cols-3 gap-4">
+    {% for p in projects %}
+    <a href="/w/{{ workspace.slug }}/projects/{{ p.id }}"
+       class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:border-violet-600/60 block">
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-medium text-zinc-100">{{ p.name }}</div>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-full {% if p.status == 'active' %}bg-emerald-600/20 text-emerald-400{% else %}bg-zinc-700/40 text-zinc-400{% endif %}">{{ p.status }}</span>
+      </div>
+      {% if p.description %}<p class="text-xs text-zinc-500 mt-1 line-clamp-2">{{ p.description }}</p>{% endif %}
+      <p class="text-xs text-zinc-500 mt-2">{{ issue_counts.get(p.id, 0) }} issue(s)</p>
+    </a>
+    {% else %}
+    <p class="text-sm text-zinc-500 col-span-3">Nenhum projeto ainda. Crie o primeiro acima.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Search — {{ workspace.name }}{% endblock %}
+{% block content %}
+<div class="px-6 py-4 border-b border-zinc-800">
+  <h1 class="text-lg font-semibold text-zinc-100">Search</h1>
+  <form method="get" action="/w/{{ workspace.slug }}/search" class="mt-3">
+    <input name="q" value="{{ q }}" autofocus placeholder="Buscar issues, agents, chats…"
+           class="bg-zinc-900 border border-zinc-800 rounded-md px-3 py-2 text-sm w-full max-w-xl focus:outline-none focus:border-violet-600">
+  </form>
+</div>
+<div class="px-6 py-4">
+  {% include "workspace/_search_results.html" %}
+</div>
+{% endblock %}

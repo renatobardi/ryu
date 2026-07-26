@@ -27,8 +27,10 @@ from ryu.api import chat as chat_api
 from ryu.api import inbox as inbox_api
 from ryu.api import issues as issues_api
 from ryu.api import pages as pages_api
+from ryu.api import projects as projects_api
 from ryu.api import skills as skills_api
 from ryu.api import squads as squads_api
+from ryu.api import workspace_extra as workspace_extra_api
 
 log = structlog.get_logger("ryu.main")
 
@@ -66,6 +68,8 @@ app.include_router(autopilots_api.router, prefix="/api/autopilots", tags=["autop
 app.include_router(squads_api.router, prefix="/api/squads", tags=["squads"])
 app.include_router(inbox_api.router, prefix="/api/inbox", tags=["inbox"])
 app.include_router(inbox_api.usage_router, prefix="/api/usage", tags=["usage"])
+app.include_router(projects_api.router, prefix="/api/projects", tags=["projects"])
+app.include_router(workspace_extra_api.search_router, prefix="/api/search", tags=["search"])
 
 # ── Páginas HTML (rotas específicas antes do catch-all /w/{slug}) ─────
 app.include_router(issues_api.pages_router, tags=["pages"])
@@ -75,6 +79,8 @@ app.include_router(skills_api.pages_router, tags=["pages"])
 app.include_router(autopilots_api.pages_router, tags=["pages"])
 app.include_router(squads_api.pages_router, tags=["pages"])
 app.include_router(inbox_api.pages_router, tags=["pages"])
+app.include_router(projects_api.pages_router, tags=["pages"])
+app.include_router(workspace_extra_api.pages_router, tags=["pages"])
 app.include_router(pages_api.router, tags=["pages"])  # / , /login , /w/{slug} — por último
 
 

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Runtimes — {{ workspace.name }}{% endblock %}
+{% block content %}
+<div class="px-6 py-4 border-b border-zinc-800">
+  <h1 class="text-lg font-semibold text-zinc-100">Runtimes</h1>
+  <p class="text-xs text-zinc-500 mt-0.5">CLIs detectados no servidor onde o Ryu roda.</p>
+</div>
+<div class="px-6 py-4">
+  <table class="w-full max-w-2xl text-sm">
+    <thead>
+      <tr class="text-left text-xs text-zinc-500 border-b border-zinc-800">
+        <th class="py-2 pr-4">Runtime</th>
+        <th class="py-2 pr-4">Status</th>
+        <th class="py-2">Caminho</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-zinc-800/60">
+      {% for r in runtimes %}
+      <tr class="text-zinc-300">
+        <td class="py-2 pr-4 font-mono">{{ r.name }}</td>
+        <td class="py-2 pr-4">
+          {% if r.available %}
+          <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-600/20 text-emerald-400">disponível</span>
+          {% else %}
+          <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-red-600/20 text-red-400">indisponível</span>
+          {% endif %}
+        </td>
+        <td class="py-2 text-xs text-zinc-500 font-mono">{{ r.path or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="mt-6 max-w-2xl bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm text-zinc-400">
+    <p class="text-zinc-300 font-medium mb-1">Como configurar</p>
+    <p>Instale o CLI desejado no host e garanta que ele esteja no <code class="text-violet-400">PATH</code> do processo do Ryu.
+    Cada agent usa o campo <code class="text-violet-400">runtime</code> (claude|codex|gemini) e pode sobrescrever
+    comando, <code class="text-violet-400">cwd</code> e variáveis de ambiente em <code class="text-violet-400">runtime_config</code>
+    (ex.: <code class="text-violet-400">{"cmd": "claude", "cwd": "/repo", "env": {"ANTHROPIC_API_KEY": "..."}}</code>).</p>
+  </div>
+</div>
+{% endblock %}
