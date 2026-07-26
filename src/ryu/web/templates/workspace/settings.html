@@ -41,6 +41,21 @@
     </div>
   </section>
 
+  <!-- Aparência -->
+  <section>
+    <h2 class="text-sm font-medium text-text-secondary mb-3">Aparência</h2>
+    {% set dark = request.cookies.get('ryu_theme') == 'dark' %}
+    <div class="flex items-center gap-3">
+      <button type="button" onclick="ryuToggleTheme()"
+              aria-pressed="{{ 'true' if dark else 'false' }}"
+              class="bg-surface-sunken hover:bg-surface-active text-text-body text-sm px-4 py-1.5 rounded-md inline-flex items-center gap-2">
+        <i data-lucide="{{ 'sun' if dark else 'moon' }}" class="w-4 h-4"></i>
+        {{ 'Usar tema claro' if dark else 'Usar tema escuro' }}
+      </button>
+      <span class="text-xs text-text-subtle">Tema atual: {{ 'escuro' if dark else 'claro' }}</span>
+    </div>
+  </section>
+
   <!-- Sessão -->
   <section>
     <h2 class="text-sm font-medium text-text-secondary mb-3">Sessão</h2>
@@ -51,6 +66,16 @@
 
 {% block scripts %}
 <script>
+// O tema é lido no servidor a cada request (base.html), então basta gravar o
+// cookie e recarregar — a página volta já com o data-theme certo, sem flash.
+// samesite/path espelham o cookie de auth; 1 ano, por browser, sem vínculo
+// com o usuário (models.py não é tocado — CONTRACTS.md regra 1).
+function ryuToggleTheme() {
+  const dark = document.cookie.split('; ').some(c => c === 'ryu_theme=dark');
+  document.cookie = `ryu_theme=${dark ? 'light' : 'dark'}; path=/; max-age=31536000; samesite=lax`;
+  location.reload();
+}
+
 async function loadPats() {
   const r = await fetch('/api/auth/tokens');
   if (!r.ok) return;

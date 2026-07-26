@@ -95,9 +95,23 @@ def env():
     )
 
 
+class FakeRequest:
+    """O que os templates tocam do Request: só os cookies.
+
+    Em produção o Starlette injeta o Request real no contexto de todo
+    TemplateResponse; aqui os testes renderizam o Jinja direto, então o
+    stub entra por padrão.
+    """
+
+    def __init__(self, cookies: dict | None = None):
+        self.cookies = cookies or {}
+
+
 def render(env, template_name: str, ctx: dict | None = None, **kwargs) -> str:
     """Renderiza um template do produto. Aceita contexto como dict ou kwargs."""
-    return env.get_template(template_name).render(**{**(ctx or {}), **kwargs})
+    full = {**(ctx or {}), **kwargs}
+    full.setdefault("request", FakeRequest())
+    return env.get_template(template_name).render(**full)
 
 
 def assert_no_legacy_vocabulary(html: str, source: str) -> None:
