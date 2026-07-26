@@ -126,7 +126,7 @@ async def delete_attachment(
 async def serve_upload(file_path: str):
     root = Path(settings.uploads_dir).resolve()
     target = (root / file_path).resolve()
-    if not str(target).startswith(str(root)):  # path traversal
+    if not target.is_relative_to(root):  # path traversal
         raise HTTPException(404, "não encontrado")
     if not target.is_file():
         raise HTTPException(404, "não encontrado")

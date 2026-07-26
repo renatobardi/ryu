@@ -191,7 +191,12 @@ async def _s3_delete(key: str) -> None:
 
 
 def _local_path(att_id: str, filename: str) -> Path:
-    return Path(settings.uploads_dir) / att_id / filename
+    """Caminho do arquivo no storage local, garantindo que fica em uploads_dir/<att_id>."""
+    base = (Path(settings.uploads_dir) / att_id).resolve()
+    target = (base / filename).resolve()
+    if target.parent != base:
+        raise AttachmentError(f"nome de arquivo inválido: {filename}")
+    return target
 
 
 def sanitize_filename(name: str) -> str:
