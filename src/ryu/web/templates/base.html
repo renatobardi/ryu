@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,16 +9,86 @@
   <link rel="stylesheet" href="/static/app.css">
   <script>
     tailwind.config = {
-      darkMode: 'class',
+      darkMode: ['selector', '[data-theme="dark"]'],
       theme: {
         extend: {
           colors: {
-            base: '#0b0b0f',
-            panel: '#111116',
-            edge: '#1f1f27',
-          }
-        }
-      }
+            'surface-app': 'var(--surface-app)',
+            'surface-chrome': 'var(--surface-chrome)',
+            'surface-card': 'var(--surface-card)',
+            'surface-raised': 'var(--surface-raised)',
+            'surface-sunken': 'var(--surface-sunken)',
+            'surface-input': 'var(--surface-input)',
+            'surface-input-alt': 'var(--surface-input-alt)',
+            'surface-column': 'var(--surface-column)',
+            'surface-hover': 'var(--surface-hover)',
+            'surface-active': 'var(--surface-active)',
+
+            'border-default': 'var(--border-default)',
+            'border-soft': 'var(--border-soft)',
+            'border-hairline': 'var(--border-hairline)',
+            'border-strong': 'var(--border-strong)',
+            'border-hover': 'var(--border-hover)',
+            'border-focus': 'var(--border-focus)',
+
+            'text-primary': 'var(--text-primary)',
+            'text-body': 'var(--text-body)',
+            'text-secondary': 'var(--text-secondary)',
+            'text-muted': 'var(--text-muted)',
+            'text-subtle': 'var(--text-subtle)',
+            'text-faint': 'var(--text-faint)',
+            'text-accent': 'var(--text-accent)',
+            'text-on-accent': 'var(--text-on-accent)',
+
+            accent: { DEFAULT: 'var(--accent)', hover: 'var(--accent-hover)' },
+
+            'status-backlog': 'var(--status-backlog)',
+            'status-todo': 'var(--status-todo)',
+            'status-in-progress': 'var(--status-in-progress)',
+            'status-in-review': 'var(--status-in-review)',
+            'status-done': 'var(--status-done)',
+            'status-blocked': 'var(--status-blocked)',
+            'status-cancelled': 'var(--status-cancelled)',
+
+            'agent-idle-bg': 'var(--agent-idle-bg)', 'agent-idle-fg': 'var(--agent-idle-fg)',
+            'agent-working-bg': 'var(--agent-working-bg)', 'agent-working-fg': 'var(--agent-working-fg)',
+            'agent-blocked-bg': 'var(--agent-blocked-bg)', 'agent-blocked-fg': 'var(--agent-blocked-fg)',
+            'agent-error-bg': 'var(--agent-error-bg)', 'agent-error-fg': 'var(--agent-error-fg)',
+            'agent-offline-bg': 'var(--agent-offline-bg)', 'agent-offline-fg': 'var(--agent-offline-fg)',
+
+            'task-queued-bg': 'var(--task-queued-bg)', 'task-queued-fg': 'var(--task-queued-fg)',
+            'task-dispatched-bg': 'var(--task-dispatched-bg)', 'task-dispatched-fg': 'var(--task-dispatched-fg)',
+            'task-running-bg': 'var(--task-running-bg)', 'task-running-fg': 'var(--task-running-fg)',
+            'task-completed-bg': 'var(--task-completed-bg)', 'task-completed-fg': 'var(--task-completed-fg)',
+            'task-failed-bg': 'var(--task-failed-bg)', 'task-failed-fg': 'var(--task-failed-fg)',
+            'task-cancelled-bg': 'var(--task-cancelled-bg)', 'task-cancelled-fg': 'var(--task-cancelled-fg)',
+
+            'sev-action-required-bg': 'var(--sev-action-required-bg)', 'sev-action-required-fg': 'var(--sev-action-required-fg)',
+            'sev-attention-bg': 'var(--sev-attention-bg)', 'sev-attention-fg': 'var(--sev-attention-fg)',
+            'sev-info-bg': 'var(--sev-info-bg)', 'sev-info-fg': 'var(--sev-info-fg)',
+
+            'prio-urgent-bg': 'var(--prio-urgent-bg)', 'prio-urgent-fg': 'var(--prio-urgent-fg)',
+            'prio-high-bg': 'var(--prio-high-bg)', 'prio-high-fg': 'var(--prio-high-fg)',
+            'prio-medium-bg': 'var(--prio-medium-bg)', 'prio-medium-fg': 'var(--prio-medium-fg)',
+            'prio-low-bg': 'var(--prio-low-bg)', 'prio-low-fg': 'var(--prio-low-fg)',
+
+            'state-on-bg': 'var(--state-on-bg)', 'state-on-fg': 'var(--state-on-fg)',
+            'state-off-bg': 'var(--state-off-bg)', 'state-off-fg': 'var(--state-off-fg)',
+
+            'chat-bubble-agent-bg': 'var(--chat-bubble-agent-bg)', 'chat-bubble-agent-fg': 'var(--chat-bubble-agent-fg)',
+            'chat-bubble-system-bg': 'var(--chat-bubble-system-bg)', 'chat-bubble-system-fg': 'var(--chat-bubble-system-fg)',
+            'chat-list-bg': 'var(--chat-list-bg)', 'chat-panel-bg': 'var(--chat-panel-bg)',
+          },
+          fontSize: {
+            '2xs': ['var(--text-2xs)', { lineHeight: '1.4' }],
+            '11': ['var(--text-11)', { lineHeight: '1.4' }],
+          },
+          letterSpacing: { code: 'var(--tracking-code)' },
+          transitionDuration: { '120': 'var(--duration-fast)' },
+          spacing: { 'issue-sidebar': 'var(--issue-sidebar-width)' },
+          boxShadow: { card: 'var(--card-shadow)' },
+        },
+      },
     };
   </script>
 </head>
