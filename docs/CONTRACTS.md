@@ -8,7 +8,9 @@ Regras para todos os agentes construtores:
 4. DB: use `Depends(get_db)` de `ryu.db`. Python 3.11, SQLAlchemy 2.0 async, `select()` style.
 5. Eventos realtime: `from ryu.realtime.hub import hub; await hub.publish(workspace_id, "issue:created", {...})`. Use a taxonomia comentada no hub.py.
 6. Auth: use `from ryu.services.auth import current_user` (dependency FastAPI que retorna User) — o agente de auth é quem a implementa; os demais apenas importam.
-7. UI: HTMX + Jinja2 + Tailwind (CDN), design system Ryu (`docs/Ryu Design System/`) — tema **claro e escuro** via atributo `data-theme` no `<html>` (cookie `ryu_theme` por browser, default claro), accent único cyan-600 (`#0891b2`), ícones Lucide (CDN) com 🤖/👤 como marcador semântico. Cores/tema só via classes Tailwind semânticas (`bg-surface-*`, `text-text-*`, `bg-status-*` etc., ver `src/ryu/web/static/app.css`) — nunca `style` inline nem `gray-*`/`indigo-*` cru. Template base em `web/templates/base.html` (feito pelo agente de UI); os demais estendem `{% extends "base.html" %}`.
+7. UI: HTMX + Jinja2 + Tailwind (CDN). Template base em `web/templates/base.html`; os demais estendem `{% extends "base.html" %}`. Nunca `style` inline.
+   **Hoje:** tema escuro fixo (`<html class="dark">`), telas em `zinc-*`/`violet-*`. Siga esse padrão e não introduza escala nova.
+   **Alvo, especificado mas NÃO aplicado:** tema claro+escuro por `data-theme`, accent ciano, ícones Lucide, cor só por classe semântica. Spec, armadilhas e ordem de execução em `docs/tailwind-config-mapping.md` — as classes semânticas ainda não existem, então não as use antes de cumprir o checklist daquele doc.
 8. Prefixos de rota: `/api/auth`, `/api/issues`, `/api/agents`, `/api/tasks`, `/api/chat`, `/api/skills`, `/api/autopilots`, `/api/inbox`. Páginas HTML em `/w/{slug}/...`.
 9. Status de issue: backlog|todo|in_progress|in_review|done|blocked|cancelled. Task: queued|dispatched|running|completed|failed|cancelled.
 10. Sem dependências novas fora do pyproject. Sem type-checker frescuras: código que roda > código bonito.
