@@ -8,17 +8,10 @@ from __future__ import annotations
 
 import pytest
 
-from .conftest import TEMPLATES, render
+from .conftest import TEMPLATES, FakeRequest, render
 
 BASE_HTML = TEMPLATES / "base.html"
 PROFILE_HTML = TEMPLATES / "workspace/profile.html"
-
-
-class _FakeRequest:
-    """Só o que os templates tocam: request.cookies."""
-
-    def __init__(self, cookies: dict | None = None):
-        self.cookies = cookies or {}
 
 
 _CTX = {
@@ -28,7 +21,7 @@ _CTX = {
 
 
 def _base(cookies=None):
-    return render(_ENV, "base.html", _CTX, request=_FakeRequest(cookies))
+    return render(_ENV, "base.html", _CTX, request=FakeRequest(cookies))
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -89,7 +82,7 @@ def test_html_tag_carries_the_attribute_before_any_stylesheet():
 
 def _profile(cookies=None):
     ctx = dict(_CTX, active_nav="profile", saved=None)
-    return render(_ENV, "workspace/profile.html", ctx, request=_FakeRequest(cookies))
+    return render(_ENV, "workspace/profile.html", ctx, request=FakeRequest(cookies))
 
 
 def test_profile_offers_the_opposite_theme():
