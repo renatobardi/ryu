@@ -211,6 +211,7 @@ async def profile_page(slug: str, request: Request, db: AsyncSession = Depends(g
             "workspace": ws,
             "active_nav": "profile",
             "saved": request.query_params.get("saved"),
+            "error": request.query_params.get("error"),
         },
     )
 
@@ -224,7 +225,8 @@ async def profile_update(
     user: User = Depends(current_user),
 ):
     await current_workspace(slug, db, user)
-    await rename_user(db, user, name)
+    if not await rename_user(db, user, name):
+        return RedirectResponse(f"/w/{slug}/profile?error=blank-name", status_code=303)
     return RedirectResponse(f"/w/{slug}/profile?saved=1", status_code=303)
 
 

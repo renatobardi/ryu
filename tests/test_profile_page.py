@@ -54,10 +54,13 @@ async def test_a_blank_name_never_replaces_the_current_one(client):
     slug = data["workspaces"][0]["slug"]
     await client.post(f"/w/{slug}/profile", data={"name": "Renato Bardi"})
 
-    await client.post(f"/w/{slug}/profile", data={"name": "   "})
+    r = await client.post(f"/w/{slug}/profile", data={"name": "   "})
 
-    r = await client.get(f"/w/{slug}/profile")
+    assert r.headers["location"] == f"/w/{slug}/profile?error=blank-name"
+    r = await client.get(r.headers["location"])
     assert "Renato Bardi" in r.text
+    assert "O nome não pode ficar em branco." in r.text
+    assert "Alterações salvas." not in r.text
 
 
 async def test_the_new_name_reaches_the_sidebar_footer_without_relogin(client):
