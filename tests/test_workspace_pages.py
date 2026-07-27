@@ -131,6 +131,16 @@ def test_settings_is_titled_workspace_settings(env):
     assert "Workspace settings" in html
 
 
+def test_settings_inputs_are_associated_with_their_labels(env):
+    """Mesma trava do campo de nome no Profile: sem `for`/`id` o leitor de tela
+    não sabe de qual campo é o rótulo.
+    """
+    html = render(env, "workspace/settings.html", _settings_ctx())
+    for field in ("ws-name", "ws-issue-prefix"):
+        assert f'<label for="{field}"' in html
+        assert f'id="{field}"' in html
+
+
 def test_the_nav_entry_carries_the_full_term(env):
     """CONTEXT.md põe "Workspace settings" no nav e manda evitar "Settings"
     sozinho. Renderizado a partir do Profile — cujo h1 é "Profile" — para que
@@ -237,6 +247,37 @@ def test_profile_says_so_when_there_is_no_token(env):
     """Lista vazia com mensagem explícita, não uma caixa vazia parecendo quebrada."""
     html = render(env, "workspace/profile.html", _profile_ctx())
     assert "Nenhum token ativo." in html
+
+
+def test_profile_never_puts_a_token_name_inside_innerhtml(env):
+    """O nome do token vem do usuário: interpolado em innerHTML, um nome como
+    `<img src=x onerror=…>` executa quando a lista redesenha.
+    """
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "innerHTML = `" not in html, "template string em innerHTML volta a interpolar o nome"
+    assert "name.textContent = t.name" in html
+
+
+def test_profile_only_refreshes_the_list_when_the_revoke_worked(env):
+    """Redesenhar sem olhar a resposta do DELETE avisa que o token sumiu quando
+    ele continua lá.
+    """
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "if (!r.ok) return patError" in html
+    assert "Não foi possível revogar o token." in html
+
+
+def test_profile_says_when_creating_a_token_failed(env):
+    """Sem isso um POST recusado é indistinguível de nada ter acontecido."""
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert 'id="pat-error"' in html
+    assert "Não foi possível criar o token." in html
+
+
+def test_profile_clears_the_error_once_the_action_works(env):
+    """Mensagem de falha pendurada ao lado de uma ação bem-sucedida mente."""
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert html.count("clearPatError();") >= 2
 
 
 # ── Members ─────────────────────────────────────────────────────────────────
