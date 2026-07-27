@@ -662,8 +662,8 @@ async def daemon_task_messages(
 
 async def _finish_side_effects(task: AgentTask) -> None:
     """Efeitos pós-terminal fora da sessão do request (comenta issue, chat cb)."""
-    from ryu.runner.loop import _finish_issue_task, _recompute_agent_status
     from ryu.services.chat import handle_chat_task_done
+    from ryu.services.daemon import finish_issue_task, recompute_agent_status
 
     async with SessionLocal() as db:
         agent = await db.get(Agent, task.agent_id)
@@ -671,8 +671,8 @@ async def _finish_side_effects(task: AgentTask) -> None:
         if fresh is None:
             return
         if fresh.status == "completed" and fresh.kind == "issue" and agent is not None:
-            await _finish_issue_task(db, fresh, agent)
-        await _recompute_agent_status(db, task.agent_id, error=(fresh.status == "failed"))
+            await finish_issue_task(db, fresh, agent)
+        await recompute_agent_status(db, task.agent_id, error=(fresh.status == "failed"))
     if task.kind == "chat":
         try:
             await handle_chat_task_done(task)
@@ -746,6 +746,10 @@ async def fail_task(
         if (res.rowcount or 0) == 0:
             await db.refresh(task)
             return {"ok": False, "status": task.status}
+        from ryu.services.daemon import recompute_agent_status
+
+        async with SessionLocal() as sdb:
+            await recompute_agent_status(sdb, task.agent_id)
         await hub.publish(
             task.workspace_id, "task:queued", {"task_id": task.id, "retry": True, "attempt": attempt + 1}
         )
@@ -812,10 +816,10 @@ async def cancel_ack(
     )
     await db.commit()
     await db.refresh(task)
-    from ryu.runner.loop import _recompute_agent_status
+    from ryu.services.daemon import recompute_agent_status
 
     async with SessionLocal() as sdb:
-        await _recompute_agent_status(sdb, task.agent_id)
+        await recompute_agent_status(sdb, task.agent_id)
     await hub.publish(task.workspace_id, "task:cancelled", {"task_id": task.id, "ack": True})
     return {"ok": True, "status": task.status}
 

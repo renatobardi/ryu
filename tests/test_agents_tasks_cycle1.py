@@ -3,7 +3,6 @@ permissão de invocação, tasks por issue (active/runs/rerun), usage por task,
 runtime profiles e transcript com seq/type."""
 from __future__ import annotations
 
-import asyncio
 from datetime import timedelta
 
 from tests.conftest import login
@@ -37,19 +36,9 @@ async def _mk_issue_with_task(client, ws_id: str, agent_id: str, title: str) -> 
     return issue, tasks[0]
 
 
-async def _drain_runner():
-    from ryu.runner import loop as runner_loop
-
-    for _ in range(200):
-        if not runner_loop._active:
-            return
-        await asyncio.sleep(0.05)
-    raise AssertionError("runner não drenou")
-
-
 # ── Concorrência por agente (claim respeita max_concurrent_tasks) ─────
 async def test_claim_respects_max_concurrent_tasks(client):
-    from ryu.runner.loop import _claim_and_spawn
+    from tests.conftest import register_test_daemon
 
     data = await login(client, "cycle1-conc@example.com")
     ws_id = data["workspaces"][0]["id"]
@@ -58,14 +47,72 @@ async def test_claim_respects_max_concurrent_tasks(client):
     i1, t1 = await _mk_issue_with_task(client, ws_id, agent["id"], "task um")
     i2, t2 = await _mk_issue_with_task(client, ws_id, agent["id"], "task dois")
 
-    await _claim_and_spawn()
-    # com limite 1, só uma foi claimed (dispatched); a outra segue queued
+    reg = await register_test_daemon(client, ws_id)
+    rdt = reg["daemon_token"]
+    rt = reg["runtimes"][0]
+
+    # com limite 1, só uma é claimada; a outra segue queued
+    r = await client.post(
+        "/api/daemon/tasks/claim",
+        json={"runtime_ids": [rt["id"]], "max_tasks": 2},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.status_code == 200, r.text
+    claimed = r.json()["tasks"]
+    assert len(claimed) == 1
+    first = claimed[0]
+    assert first["status"] == "dispatched"
+
     r = await client.get("/api/tasks", params={"workspace_id": ws_id, "status": "queued"})
     assert len(r.json()) == 1
-    await _drain_runner()
-    # segunda rodada pega a que sobrou
-    await _claim_and_spawn()
-    await _drain_runner()
+
+    # start e complete a primeira
+    r = await client.post(
+        f"/api/daemon/tasks/{first['id']}/start",
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.status_code == 200
+
+    r = await client.post(
+        f"/api/daemon/tasks/{first['id']}/messages",
+        json={"messages": [{"role": "stdout", "content": "ok"}]},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.status_code == 201
+
+    # enquanto a primeira roda, a segunda não é claimada
+    r = await client.post(
+        "/api/daemon/tasks/claim",
+        json={"runtime_ids": [rt["id"]], "max_tasks": 2},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.json()["tasks"] == []
+
+    r = await client.post(
+        f"/api/daemon/tasks/{first['id']}/complete",
+        json={"result_summary": "primeira feita"},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.status_code == 200
+
+    # agora a segunda é claimada e completada
+    r = await client.post(
+        "/api/daemon/tasks/claim",
+        json={"runtime_ids": [rt["id"]], "max_tasks": 2},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert len(r.json()["tasks"]) == 1
+    second = r.json()["tasks"][0]
+    await client.post(
+        f"/api/daemon/tasks/{second['id']}/start",
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    await client.post(
+        f"/api/daemon/tasks/{second['id']}/complete",
+        json={"result_summary": "segunda feita"},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+
     r = await client.get("/api/tasks", params={"workspace_id": ws_id, "status": "completed"})
     assert len(r.json()) == 2
 
@@ -233,7 +280,7 @@ async def test_invocation_permission(client):
 
 # ── Tasks por issue: active / runs / rerun ────────────────────────────
 async def test_issue_active_runs_rerun(client):
-    from ryu.runner.loop import _run_one
+    from tests.conftest import run_task_through_daemon
 
     data = await login(client, "cycle1-rerun@example.com")
     ws_id = data["workspaces"][0]["id"]
@@ -247,7 +294,7 @@ async def test_issue_active_runs_rerun(client):
     r = await client.post(f"/api/tasks/issues/{issue['id']}/rerun")
     assert r.status_code == 409
 
-    await _run_one(task["id"])
+    await run_task_through_daemon(client, ws_id, task_id=task["id"])
     r = await client.get(f"/api/tasks/issues/{issue['id']}/active")
     assert r.json()["task"] is None
 
@@ -344,9 +391,23 @@ async def test_cancel_queued_task_and_workdir_columns(client):
     assert body["status"] == "cancelled"
     assert body["cancel_requested"] is True
 
-    # runner não executa task cancelada
-    from ryu.runner.loop import _run_one
-
-    await _run_one(task["id"])
+    # com o executor in-process removido, a task cancelada permanece cancelada
     r = await client.get(f"/api/tasks/{task['id']}")
     assert r.json()["status"] == "cancelled"
+
+
+# ── Sem runtime online a task permanece honestamente na fila ──────────
+async def test_task_stays_queued_without_online_runtime(client):
+    from ryu.runner.loop import _schedule, _sweep
+
+    data = await login(client, "cycle1-honest-queue@example.com")
+    ws_id = data["workspaces"][0]["id"]
+    agent = await _mk_agent(client, ws_id, "Honest")
+    issue, task = await _mk_issue_with_task(client, ws_id, agent["id"], "sem daemon")
+
+    # nenhum daemon registrado: scheduler não faz claim, sweeper não tira da fila
+    await _schedule()
+    await _sweep()
+    r = await client.get(f"/api/tasks/{task['id']}")
+    assert r.json()["status"] == "queued"
+    assert r.json()["finished_at"] is None

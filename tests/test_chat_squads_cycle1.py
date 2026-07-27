@@ -22,10 +22,10 @@ async def _mk_session(client, ws_id: str, agent_id: str) -> dict:
     return r.json()
 
 
-async def _run_task(task_id: str):
-    from ryu.runner.loop import _run_one
+async def _run_task(client, ws_id: str, task_id: str):
+    from tests.conftest import run_task_through_daemon
 
-    await _run_one(task_id)
+    await run_task_through_daemon(client, ws_id, task_id=task_id)
 
 
 # ── chat: pending-task + cancel + draft restore ───────────────────────
@@ -103,7 +103,7 @@ async def test_chat_unread_and_mark_read(client):
 
     r = await client.post(f"/api/chat/{session['id']}/messages", json={"content": "oi"})
     task_id = r.json()["task_id"]
-    await _run_task(task_id)  # stub responde → marca unread
+    await _run_task(client, ws_id, task_id)  # daemon completa → marca unread
 
     r = await client.get(f"/api/chat/{session['id']}")
     assert r.json()["has_unread"] is True
@@ -267,7 +267,7 @@ async def test_squad_backlog_promotion_triggers_briefing(client):
 async def test_comment_wakes_squad_leader(client):
     import asyncio
 
-    from ryu.runner.loop import _run_one
+    from tests.conftest import run_task_through_daemon
 
     data = await login(client, "cs-squad-wake@example.com")
     ws_id = data["workspaces"][0]["id"]
@@ -286,7 +286,7 @@ async def test_comment_wakes_squad_leader(client):
     issue = r.json()
     r = await client.get("/api/tasks", params={"workspace_id": ws_id, "issue_id": issue["id"]})
     briefing = r.json()[0]
-    await _run_one(briefing["id"])  # briefing inicial roda (stub)
+    await run_task_through_daemon(client, ws_id, task_id=briefing["id"])  # briefing pelo daemon
     await asyncio.sleep(0)
 
     # comentário humano re-aciona o líder (nova task com o comentário no contexto)
