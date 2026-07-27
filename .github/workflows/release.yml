@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    # Todo merge na main publica uma release, subindo a minor.
+    # Todo merge na main publica uma imagem, subindo o último número da versão.
     branches:
       - main
     # Uma tag v* criada à mão continua funcionando como antes.
@@ -14,6 +14,13 @@ on:
         description: "Tag da imagem a publicar (ex.: v0.2.0 ou latest)"
         required: true
         default: "latest"
+
+# Serializa as publicações. Sem isso, dois merges próximos calculam a mesma
+# versão e o segundo falha ao criar a tag; enfileirados, o segundo recalcula
+# depois do primeiro e segue o contador.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   # write porque o job cria a tag da release. Tag criada com o GITHUB_TOKEN não
@@ -33,41 +40,76 @@ jobs:
 
       - name: Determine image tag
         id: meta
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            tag="${{ github.event.inputs.tag }}"
-          elif [ "${{ github.ref_type }}" = "tag" ]; then
-            tag="${{ github.ref_name }}"
-          else
-            # Merge na main: sobe o último número a partir da última tag v*
-            # (v0.4.7 -> v0.4.8). Os dois primeiros só mudam por tag manual.
-            latest="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)"
-            if [ -z "$latest" ]; then
-              tag="v0.1.0"
-            else
-              rest="${latest#v}"
-              major="${rest%%.*}"
-              minor="${rest#*.}"
-              minor="${minor%%.*}"
-              patch="${rest##*.}"
-              tag="v${major}.${minor}.$((patch + 1))"
-            fi
-            echo "última tag: ${latest:-nenhuma} -> nova: $tag"
-          fi
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-
-      - name: Create release tag
-        # Só quando a versão foi calculada aqui; tag criada à mão já existe.
-        if: github.event_name == 'push' && github.ref_type == 'branch'
+        # Os valores vindos do evento entram por env, nunca interpolados no
+        # corpo do script: um ref chamado `$(...)` seria executado pelo Bash.
         env:
-          TAG: ${{ steps.meta.outputs.tag }}
+          EVENT: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Ryu $TAG"
-          git push origin "$TAG"
+          create_tag=false
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            # Publicar de outro ref envenenaria a :latest, que é o que o
+            # ryu-up.sh puxa. O nome da imagem é livre; a origem não.
+            # O tipo entra na condição porque uma *tag* chamada `main` também
+            # chega aqui com REF_NAME=main.
+            if [ "$REF_TYPE" != "branch" ] || [ "$REF_NAME" != "main" ]; then
+              echo "Release manual só a partir da branch main (veio de $REF_TYPE '$REF_NAME')." >&2
+              exit 1
+            fi
+            tag="$INPUT_TAG"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            # Mesma razão do guard acima, para o caminho mais fácil: toda
+            # publicação move a :latest, então uma tag só publica se apontar
+            # para um commit que já está na main. Sem isto bastaria empurrar
+            # v9.9.9 num commit nunca revisado para trocar a imagem de quem
+            # está em produção. Tags de release nascem na main, então o fluxo
+            # documentado no DEPLOY.md continua valendo.
+            git fetch --quiet origin main:refs/remotes/origin/main
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+              echo "Tag '$REF_NAME' aponta para um commit fora da main." >&2
+              exit 1
+            fi
+            tag="$REF_NAME"
+          else
+            # Merge na main: sobe o último número da última versão publicada
+            # (v0.4.7 -> v0.4.8). Os dois primeiros só mudam por tag manual.
+            #
+            # O filtro é ancorado de propósito: um `git tag -l 'v*.*.*'` também
+            # casaria v1.2.3-rc1 e v0.4.7.1, e daí sairia um "patch" como
+            # "3-rc1" que aborta a aritmética, ou um número que anda pra trás.
+            versions="$(git tag -l --sort=-v:refname | grep -Ex 'v[0-9]+\.[0-9]+\.[0-9]+' || true)"
+            latest="${versions%%$'\n'*}"
+            if [ -z "$latest" ]; then
+              echo "Nenhuma tag de versão no repositório — crie a primeira à mão." >&2
+              exit 1
+            fi
+            numbers="${latest#v}"
+            major="${numbers%%.*}"
+            minor="${numbers#*.}"
+            minor="${minor%%.*}"
+            patch="${numbers##*.}"
+            # 10# força base decimal: um patch como "08" seria lido como octal
+            # inválido e abortaria a aritmética.
+            tag="v${major}.${minor}.$((10#$patch + 1))"
+            create_tag=true
+            echo "última versão: $latest -> nova: $tag"
+          fi
+          # Daqui o valor vai para o GITHUB_OUTPUT e de lá para a referência da
+          # imagem. Uma quebra de linha — possível no input do dispatch via API,
+          # não pela UI — forjaria linhas de output (create_tag=true) e uma
+          # segunda imagem no `tags:` do build. Nome de imagem não precisa de
+          # mais que isto.
+          case "$tag" in
+            "" | *[!A-Za-z0-9._-]*)
+              echo "Tag inválida: '$tag' (permitido: A-Z a-z 0-9 . _ -)." >&2
+              exit 1
+              ;;
+          esac
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "create_tag=${create_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -98,3 +140,17 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.meta.outputs.tag }}
+
+      # Depois do build, de propósito: se o build falhar, a versão não é
+      # consumida e o próximo merge tenta o mesmo número, em vez de deixar
+      # uma tag apontando para um commit sem imagem.
+      - name: Create release tag
+        if: steps.meta.outputs.create_tag == 'true'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Ryu $TAG"
+          git push origin "$TAG"
