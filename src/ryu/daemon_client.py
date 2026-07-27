@@ -214,7 +214,8 @@ class Daemon:
     async def report_models(self, ws_id: str, rt: dict, pending: dict) -> None:
         provider = rt["provider"]
         # sem catálogo embutido: o modelo vem do próprio agente via ACP (ADR-0002)
-        override = os.environ.get(f"RYU_{provider.upper().replace('-', '_')}_MODELS", "")
+        spec = providers.get(provider)
+        override = os.environ.get(f"RYU_{spec.env_key}_MODELS", "") if spec else ""
         models = [m.strip() for m in override.split(",") if m.strip()] if override else []
         info = self.registered[ws_id]
         async with self._client(info["token"]) as c:

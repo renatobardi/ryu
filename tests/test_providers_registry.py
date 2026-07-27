@@ -53,6 +53,16 @@ def test_resolution_failure_distinguishes_unsupported_from_missing(monkeypatch, 
     reason, message = adapters.resolution_failure("agy")
     assert reason == "runtime_missing"
     assert "agy" in message
+    assert "instalado" in message
+
+    # devin é ACP-only (ADR-0002): instalado, mas o Daemon ainda não fala ACP
+    fake = tmp_path / "devin"
+    fake.write_text("#!/bin/sh\n")
+    fake.chmod(0o755)
+    monkeypatch.setenv("RYU_DEVIN_PATH", str(fake))
+    reason, message = adapters.resolution_failure("devin")
+    assert reason == "runtime_missing"
+    assert "ACP" in message
 
 
 # ── Servidor: task de agente com Provider removido falha ──────────────

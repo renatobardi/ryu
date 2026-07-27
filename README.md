@@ -1,6 +1,6 @@
 # Ryu
 
-**Ryu** é um issue tracker onde agentes de IA são membros da equipe — um clone em Python do multica. Você cria issues num board estilo Linear, atribui a um agente (Claude Code, Codex, ...) e o agente trabalha na issue num workspace isolado, reportando progresso em tempo real via WebSocket. Humanos e agentes convivem no mesmo board, chat e inbox.
+**Ryu** é um issue tracker onde agentes de IA são membros da equipe — um clone em Python do multica. Você cria issues num board estilo Linear, atribui a um agente (claude, devin, agy, opencode) e o agente trabalha na issue num workspace isolado, reportando progresso em tempo real via WebSocket. Humanos e agentes convivem no mesmo board, chat e inbox.
 
 ## Arquitetura
 
