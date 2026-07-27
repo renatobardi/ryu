@@ -68,10 +68,9 @@ class Settings(BaseSettings):
     s3_public_base_url: str | None = None  # CDN público (opcional)
 
     # ── Runner / fila de tasks (agents-tasks ciclo 1) ─────────────────
-    runner_max_parallel: int = 8  # tasks simultâneas no processo (todas as agents)
-    task_lease_minutes: int = 30  # lease renovado a cada heartbeat
-    task_heartbeat_seconds: int = 20  # renovação de lease + checagem de cancel
-    task_run_timeout_minutes: int = 30  # timeout duro do subprocesso do runtime
+    # O servidor NÃO executa tasks; o Daemon é o único executor (ADR-0001).
+    # O runner mantém scheduler, sweeper de lease, TTL de fila, retry e GC de work_dir.
+    task_lease_minutes: int = 30  # lease renovado a cada heartbeat do daemon
     task_queued_ttl_hours: int = 24  # TTL de task presa em queued
     task_default_max_attempts: int = 3  # retries automáticos p/ falha de infra
     sweep_interval_seconds: int = 60  # sweeper de órfãs/leases vencidos
@@ -87,11 +86,6 @@ class Settings(BaseSettings):
     local_skills_dir: Path | None = None
 
     # ── Daemon externo / CLI (daemon-cli ciclo 1) ─────────────────────
-    # runner_mode: "auto"      = runner in-process roda tudo, MAS cede tasks
-    #                            cujo provider tem runtime externo online;
-    #              "inprocess" = runner roda tudo (ignora daemons);
-    #              "off"       = só daemons externos executam (fila p/ claim).
-    runner_mode: str = "auto"
     daemon_token_ttl_days: int = 30  # validade do rdt_ emitido no register
     runtime_offline_seconds: int = 60  # sem heartbeat há N s → runtime offline
     app_url: str | None = None  # URL pública do app (fluxo de login do CLI)

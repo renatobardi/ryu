@@ -7,10 +7,10 @@ from tests.conftest import login
 
 
 async def _tick_runner_until_done(client, workspace_id: str, task_id: str) -> dict:
-    """Executa o tick do runner manualmente (lifespan não roda sob ASGITransport)."""
-    from ryu.runner.loop import _run_one
+    """Simula um daemon que claima e completa a task (lifespan não roda)."""
+    from tests.conftest import run_task_through_daemon
 
-    await _run_one(task_id)
+    await run_task_through_daemon(client, workspace_id, task_id=task_id)
     r = await client.get(f"/api/tasks/{task_id}")
     assert r.status_code == 200, r.text
     return r.json()

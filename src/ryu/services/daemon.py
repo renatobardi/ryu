@@ -212,10 +212,7 @@ async def online_providers(db: AsyncSession, workspace_id: str | None = None) ->
 
 
 async def agent_is_online(db: AsyncSession, agent: Agent) -> bool:
-    """Derivação online/offline do agente: runner in-process ativo OU runtime
-    externo do provider do agente online no workspace."""
-    if settings.runner_mode in ("auto", "inprocess"):
-        return True
+    """Derivação online/offline do agente: só runtime externo do provider."""
     pairs = await online_providers(db, agent.workspace_id)
     return (agent.workspace_id, agent.runtime) in pairs
 

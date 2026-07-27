@@ -61,6 +61,67 @@ async def login(client: httpx.AsyncClient, email: str) -> dict:
     return data
 
 
+async def register_test_daemon(client: httpx.AsyncClient, workspace_id: str, provider: str = "echo-fallback") -> dict:
+    """Registra um daemon fake no workspace para simular execução externa."""
+    r = await client.post(
+        "/api/daemon/register",
+        json={
+            "workspace_id": workspace_id,
+            "daemon_id": "test-daemon",
+            "device_name": "Test Machine",
+            "runtimes": [{"provider": provider}],
+        },
+    )
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+async def run_task_through_daemon(
+    client: httpx.AsyncClient,
+    workspace_id: str,
+    *,
+    task_id: str | None = None,
+    result_summary: str = "feito pelo daemon",
+) -> dict:
+    """Simula um daemon que claima, inicia, envia mensagens e completa uma task."""
+    reg = await register_test_daemon(client, workspace_id)
+    rdt = reg["daemon_token"]
+    rt = reg["runtimes"][0]
+
+    r = await client.post(
+        "/api/daemon/tasks/claim",
+        json={"runtime_ids": [rt["id"]], "max_tasks": 1},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.status_code == 200, r.text
+    tasks = r.json()["tasks"]
+    assert tasks, "nenhuma task foi claimada"
+    t = tasks[0]
+    if task_id:
+        assert t["id"] == task_id
+
+    r = await client.post(
+        f"/api/daemon/tasks/{t['id']}/start",
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.status_code == 200, r.text
+
+    r = await client.post(
+        f"/api/daemon/tasks/{t['id']}/messages",
+        json={"messages": [{"role": "system", "type": "system", "content": "iniciado pelo daemon"}]},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.status_code == 201, r.text
+
+    r = await client.post(
+        f"/api/daemon/tasks/{t['id']}/complete",
+        json={"result_summary": result_summary},
+        headers={"Authorization": f"Bearer {rdt}"},
+    )
+    assert r.status_code == 200, r.text
+    return t
+
+
 # ── Design system: renderização de template ──────────────────────────────────
 # Cinco arquivos de teste clonaram este scaffolding e as cópias divergiram:
 # cada uma passou a checar uma lista diferente de vocabulário legado, e nenhuma
