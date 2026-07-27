@@ -130,7 +130,7 @@ def build_command(
     structured: bool = False,
     profile: dict | None = None,
 ) -> list[str] | None:
-    """Retorna o argv para o runtime, ou None se o binário não existe (→ stub).
+    """Retorna o argv para o runtime, ou None se a família do provider não é suportada.
 
     `profile` (opcional): {"protocol_family", "command_name", "fixed_args"} —
     resolve o comando a partir do runtime_profile do workspace.
