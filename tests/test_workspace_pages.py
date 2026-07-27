@@ -274,6 +274,14 @@ def test_profile_says_when_creating_a_token_failed(env):
     assert "Não foi possível criar o token." in html
 
 
+def test_profile_says_when_the_list_could_not_load(env):
+    """GET recusado deixando o `<ul>` vazio é indistinguível de "não há token" —
+    o estado vazio existe justamente para a lista não parecer quebrada.
+    """
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "Não foi possível carregar os tokens." in html
+
+
 def test_profile_clears_the_error_once_the_action_works(env):
     """Mensagem de falha pendurada ao lado de uma ação bem-sucedida mente."""
     html = render(env, "workspace/profile.html", _profile_ctx())

@@ -81,7 +81,7 @@ function ryuToggleTheme() {
 
 async function loadPats() {
   const r = await fetch('/api/auth/tokens');
-  if (!r.ok) return;
+  if (!r.ok) return patError('Não foi possível carregar os tokens.');
   const items = await r.json();
   const ul = document.getElementById('pat-list');
   ul.innerHTML = '';
