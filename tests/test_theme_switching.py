@@ -95,9 +95,19 @@ def test_profile_reports_the_current_theme():
     assert "Tema atual: escuro" in _profile({"ryu_theme": "dark"})
 
 
-def test_toggle_button_exposes_pressed_state():
-    assert 'aria-pressed="false"' in _profile()
-    assert 'aria-pressed="true"' in _profile({"ryu_theme": "dark"})
+def test_toggle_button_points_at_the_text_that_states_the_theme():
+    """`aria-pressed` mentia no escuro: o nome do botão oferecia "Usar tema
+    claro" enquanto `pressed=true` se referia ao escuro — o leitor de tela
+    anunciava "Usar tema claro, pressionado". O estado passa a vir do texto ao
+    lado, ligado por `aria-describedby`; substitui o `aria-pressed` que a #50
+    pedia ao pé da letra.
+    """
+    assert "aria-pressed" not in _profile()
+    for cookies, current in ((None, "claro"), ({"ryu_theme": "dark"}, "escuro")):
+        html = _profile(cookies)
+        assert 'aria-describedby="theme-state"' in html
+        assert 'id="theme-state"' in html
+        assert f"Tema atual: {current}" in html
 
 
 def test_toggle_writes_the_cookie_the_server_reads():

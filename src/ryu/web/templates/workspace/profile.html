@@ -50,12 +50,12 @@
     {% set dark = request.cookies.get('ryu_theme') == 'dark' %}
     <div class="flex items-center gap-3">
       <button type="button" onclick="ryuToggleTheme()"
-              aria-pressed="{{ 'true' if dark else 'false' }}"
+              aria-describedby="theme-state"
               class="bg-surface-sunken hover:bg-surface-active text-text-body text-sm px-4 py-1.5 rounded-md inline-flex items-center gap-2">
         <i data-lucide="{{ 'sun' if dark else 'moon' }}" class="w-4 h-4"></i>
         {{ 'Usar tema claro' if dark else 'Usar tema escuro' }}
       </button>
-      <span class="text-xs text-text-subtle">Tema atual: {{ 'escuro' if dark else 'claro' }}</span>
+      <span id="theme-state" class="text-xs text-text-subtle">Tema atual: {{ 'escuro' if dark else 'claro' }}</span>
     </div>
   </section>
 
