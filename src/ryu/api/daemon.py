@@ -32,7 +32,6 @@ from ryu.models import (
     AgentRuntime,
     AgentTask,
     Member,
-    RuntimeProfile,
     TaskMessage,
     User,
     Workspace,
@@ -244,15 +243,6 @@ async def _claimed_task_payload(db: AsyncSession, task: AgentTask) -> dict:
     d = task_to_dict(task)
     agent = await db.get(Agent, task.agent_id)
     if agent is not None:
-        profile = None
-        if getattr(agent, "profile_id", None):
-            p = await db.get(RuntimeProfile, agent.profile_id)
-            if p is not None:
-                profile = {
-                    "protocol_family": p.protocol_family,
-                    "command_name": p.command_name,
-                    "fixed_args": list(p.fixed_args or []),
-                }
         d["agent"] = {
             "id": agent.id,
             "name": agent.name,
@@ -263,7 +253,6 @@ async def _claimed_task_payload(db: AsyncSession, task: AgentTask) -> dict:
             "instructions": agent.instructions,
             "thinking_level": agent.thinking_level,
             "service_tier": agent.service_tier,
-            "profile": profile,
         }
     return d
 
@@ -387,28 +376,6 @@ async def daemon_workspaces(
 ):
     wss = await svc.daemon_workspaces(db, user_id=ident.user_id, workspace_id=ident.workspace_id)
     return [{"id": w.id, "slug": w.slug, "name": w.name} for w in wss]
-
-
-@router.get("/workspaces/{workspace_id}/runtime-profiles")
-async def daemon_runtime_profiles(
-    workspace_id: str,
-    db: AsyncSession = Depends(get_db),
-    ident: DaemonIdentity = Depends(daemon_identity),
-):
-    await _require_ws(db, ident, workspace_id)
-    res = await db.execute(
-        select(RuntimeProfile).where(RuntimeProfile.workspace_id == workspace_id)
-    )
-    return [
-        {
-            "id": p.id,
-            "display_name": p.display_name,
-            "protocol_family": p.protocol_family,
-            "command_name": p.command_name,
-            "fixed_args": list(p.fixed_args or []),
-        }
-        for p in res.scalars()
-    ]
 
 
 # ── Tokens rdt_ (emissão dedicada + revogação) ────────────────────────
@@ -931,34 +898,6 @@ async def daemon_ws(websocket: WebSocket):
                             "type": "daemon:workspaces_changed",
                             "id": req_id,
                             "payload": {"workspaces": [{"id": w.id, "slug": w.slug, "name": w.name} for w in wss]},
-                        }
-                    )
-                )
-            elif mtype == "daemon:runtime_profiles":
-                wsid = payload.get("workspace_id", "")
-                async with SessionLocal() as db:
-                    ok = await ident.can_access(db, wsid)
-                    profiles = []
-                    if ok:
-                        res = await db.execute(
-                            select(RuntimeProfile).where(RuntimeProfile.workspace_id == wsid)
-                        )
-                        profiles = [
-                            {
-                                "id": p.id,
-                                "display_name": p.display_name,
-                                "protocol_family": p.protocol_family,
-                                "command_name": p.command_name,
-                                "fixed_args": list(p.fixed_args or []),
-                            }
-                            for p in res.scalars()
-                        ]
-                await websocket.send_text(
-                    _json.dumps(
-                        {
-                            "type": "daemon:runtime_profiles_changed",
-                            "id": req_id,
-                            "payload": {"workspace_id": wsid, "profiles": profiles},
                         }
                     )
                 )

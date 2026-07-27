@@ -61,6 +61,10 @@ async def init_db() -> None:
         "ALTER TABLE agent ADD COLUMN model VARCHAR",
         "ALTER TABLE agent ADD COLUMN thinking_level VARCHAR",
         "ALTER TABLE agent ADD COLUMN service_tier VARCHAR",
+        # DÍVIDA (issue #55): coluna órfã — o RuntimeProfile saiu do modelo, mas a
+        # coluna fica (DBs existentes já a têm) e nenhum código a lê ou escreve.
+        # A tabela runtime_profile também permanece e não é mais purgada ao
+        # deletar um workspace. Remover as duas exige migração de schema.
         "ALTER TABLE agent ADD COLUMN profile_id VARCHAR",
         # agents-tasks ciclo 1 — agent_task (lease/retry/sessão/cancel)
         "ALTER TABLE agent_task ADD COLUMN attempt INTEGER DEFAULT 1",

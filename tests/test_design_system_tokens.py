@@ -155,7 +155,7 @@ _COMMON_CTX = {
 def _agents_ctx():
     agents = [
         {"id": "a1", "name": "Coder", "handle": "coder", "runtime": "claude", "description": "code agent", "status": "working"},
-        {"id": "a2", "name": "Reviewer", "handle": "reviewer", "runtime": "codex", "status": "idle"},
+        {"id": "a2", "name": "Reviewer", "handle": "reviewer", "runtime": "devin", "status": "idle"},
     ]
     return {
         **_COMMON_CTX,

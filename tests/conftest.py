@@ -61,7 +61,7 @@ async def login(client: httpx.AsyncClient, email: str) -> dict:
     return data
 
 
-async def register_test_daemon(client: httpx.AsyncClient, workspace_id: str, provider: str = "echo-fallback") -> dict:
+async def register_test_daemon(client: httpx.AsyncClient, workspace_id: str, provider: str = "claude") -> dict:
     """Registra um daemon fake no workspace para simular execução externa."""
     r = await client.post(
         "/api/daemon/register",

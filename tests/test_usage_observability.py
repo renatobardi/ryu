@@ -8,7 +8,7 @@ from tests.conftest import login
 async def _mk_agent(client, ws_id: str, name: str, **extra) -> dict:
     r = await client.post(
         "/api/agents",
-        json={"workspace_id": ws_id, "name": name, "handle": name.lower(), "runtime": "echo-fallback", **extra},
+        json={"workspace_id": ws_id, "name": name, "handle": name.lower(), "runtime": "claude", **extra},
     )
     assert r.status_code == 201, r.text
     return r.json()
@@ -56,7 +56,7 @@ async def test_record_task_usage_estimates_cost_when_not_reported(client):
     assert r.status_code == 201, r.text
     row = r.json()
     assert row["cost_usd"] > 0
-    assert row["runtime"] == "echo-fallback"
+    assert row["runtime"] == "claude"
 
 
 # ── Rollup incremental ──────────────────────────────────────────────────
@@ -134,7 +134,7 @@ async def test_dashboard_usage_and_runtime_endpoints(client):
     r = await client.get("/api/dashboard/runtime/daily", params={"workspace_id": ws_id})
     assert r.status_code == 200
 
-    r = await client.get("/api/dashboard/runtimes/echo-fallback/usage", params={"workspace_id": ws_id})
+    r = await client.get("/api/dashboard/runtimes/claude/usage", params={"workspace_id": ws_id})
     assert r.status_code == 200
 
     r = await client.get("/api/dashboard/agent-activity-30d", params={"workspace_id": ws_id})

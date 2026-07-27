@@ -4,7 +4,8 @@ Responsabilidade do servidor (ADR-0001):
 - Scheduler: acorda daemons conectados quando há tasks na fila e runtime
   externo online para o provider.
 - Sweeper: recupera tasks órfãs (running/dispatched com lease vencido),
-  aplica TTL de queued e limpa agentes presos em 'working'.
+  aplica TTL de queued, falha tasks de agente com Provider fora do registro
+  (`provider_unsupported`) e limpa agentes presos em 'working'.
 - GC de work_dirs: remove diretórios de tasks terminadas há mais de N dias.
 - Retry: falhas de infraestrutura (crash/timeout/lease_expired) re-enfileira
   até max_attempts.
@@ -25,9 +26,11 @@ from pathlib import Path
 import structlog
 from sqlalchemy import select
 
+from ryu import providers
 from ryu.db import SessionLocal
 from ryu.models import Agent, AgentTask, ChatSession, Issue, TaskMessage
 from ryu.realtime.hub import hub
+from ryu.runner import adapters
 
 log = structlog.get_logger("ryu.runner")
 
@@ -146,9 +149,18 @@ async def _sweep() -> None:
                 reason = "agent_missing"
             elif getattr(agent, "archived_at", None):
                 reason = "agent_archived"
+            elif not providers.is_supported(agent.runtime):
+                reason = "provider_unsupported"
             elif (_aware(t.created_at) or now) < cutoff:
                 reason = "queued_ttl"
-            if reason:
+            if reason == "provider_unsupported":
+                # configuração morta: esperar na fila seria mentira, não é falta de Runtime
+                t.status = "failed"
+                t.failure_reason = reason
+                t.error = t.error or adapters.resolution_failure(agent.runtime)[1]
+                t.finished_at = now
+                events.append((t.workspace_id, "task:failed", {"task_id": t.id, "failure_reason": reason}))
+            elif reason:
                 t.status = "cancelled"
                 t.failure_reason = reason
                 t.finished_at = now

@@ -40,28 +40,14 @@ from pathlib import Path
 
 import httpx
 
-from ryu import cliconf
-from ryu.runner.adapters import build_command, detect_runtimes, resolve_binary, runtime_env
-
-# modelos conhecidos por provider (fallback do model-list; os CLIs não expõem
-# enumeração programática uniforme — aliases documentados de cada CLI)
-KNOWN_MODELS = {
-    "claude": ["opus", "sonnet", "haiku"],
-    "codex": ["gpt-5-codex", "o4-mini", "o3"],
-    "gemini": ["gemini-2.5-pro", "gemini-2.5-flash"],
-    "qwen": ["qwen3-coder-plus", "qwen3-coder-flash"],
-}
-
-# comando de self-update de cada CLI (pending_update do heartbeat-ack)
-UPDATE_COMMANDS = {
-    "claude": ["update"],
-    "codex": ["update"],
-    "copilot": ["update"],
-    "gemini": None,  # npm-managed; sem subcomando de update
-    "opencode": ["upgrade"],
-    "cursor-agent": ["update"],
-    "qwen": None,
-}
+from ryu import cliconf, providers
+from ryu.runner.adapters import (
+    build_command,
+    detect_runtimes,
+    resolution_failure,
+    resolve_binary,
+    runtime_env,
+)
 
 
 def _now_iso() -> str:
@@ -124,7 +110,7 @@ class Daemon:
     # ── Registro ──────────────────────────────────────────────────────
     async def register_all(self) -> None:
         if not self.detected:
-            _log("nenhum CLI de agente detectado — instale claude/codex/gemini/... e reinicie")
+            _log(f"nenhum CLI de agente detectado — instale {'/'.join(providers.NAMES)} e reinicie")
         async with self._client() as c:
             r = await c.get("/api/daemon/workspaces")
             r.raise_for_status()
@@ -201,7 +187,8 @@ class Daemon:
 
     async def run_update(self, ws_id: str, rt: dict, pending: dict) -> None:
         provider = rt["provider"]
-        args = UPDATE_COMMANDS.get(provider)
+        spec = providers.get(provider)
+        args = spec.update if spec else None
         binary = resolve_binary(provider)
         status, message, version = "failed", "", ""
         if binary and args is not None:
@@ -226,16 +213,16 @@ class Daemon:
 
     async def report_models(self, ws_id: str, rt: dict, pending: dict) -> None:
         provider = rt["provider"]
-        models = KNOWN_MODELS.get(provider, [])
+        # sem catálogo embutido: o modelo vem do próprio agente via ACP (ADR-0002)
         override = os.environ.get(f"RYU_{provider.upper().replace('-', '_')}_MODELS", "")
-        if override:
-            models = [m.strip() for m in override.split(",") if m.strip()]
+        models = [m.strip() for m in override.split(",") if m.strip()] if override else []
         info = self.registered[ws_id]
         async with self._client(info["token"]) as c:
             with contextlib.suppress(Exception):
                 await c.post(
                     f"/api/daemon/runtimes/{rt['id']}/models/{pending['id']}/result",
-                    json={"models": models, "error": "" if models else f"provider {provider} sem catálogo conhecido"},
+                    json={"models": models,
+                          "error": "" if models else f"catálogo de modelos do {provider} ainda não vem do CLI"},
                 )
 
     # ── Claim + execução ──────────────────────────────────────────────
@@ -294,13 +281,12 @@ class Daemon:
                 instructions=instructions,
                 resume_session_id=task.get("session_id"),
                 structured=False,
-                profile=agent.get("profile"),
             )
             if argv is None:
+                reason, message = resolution_failure(provider)
                 await c.post(
                     f"/api/daemon/tasks/{task_id}/fail",
-                    json={"error": f"CLI do provider {provider} indisponível nesta máquina",
-                          "failure_reason": "runtime_missing"},
+                    json={"error": message, "failure_reason": reason},
                 )
                 return
             env = {

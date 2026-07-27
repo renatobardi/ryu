@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ryu import providers
 from ryu.db import get_db
 from ryu.models import (
     Agent,
@@ -68,7 +69,6 @@ def agent_to_dict(a: Agent) -> dict:
         "model": a.model,
         "thinking_level": a.thinking_level,
         "service_tier": a.service_tier,
-        "profile_id": a.profile_id,
         "created_at": a.created_at.isoformat() if a.created_at else None,
     }
 
@@ -117,7 +117,6 @@ class AgentCreate(BaseModel):
     model: str | None = None
     thinking_level: str | None = None
     service_tier: str | None = None
-    profile_id: str | None = None
 
 
 class AgentUpdate(BaseModel):
@@ -133,7 +132,6 @@ class AgentUpdate(BaseModel):
     model: str | None = None
     thinking_level: str | None = None
     service_tier: str | None = None
-    profile_id: str | None = None
 
 
 class TargetIn(BaseModel):
@@ -181,22 +179,11 @@ def _validate_agent_fields(changes: dict) -> None:
         raise HTTPException(422, "max_concurrent_tasks deve ser >= 1")
 
 
-async def _validate_profile(db: AsyncSession, profile_id: str | None, workspace_id: str) -> None:
-    if not profile_id:
-        return
-    from ryu.models import RuntimeProfile
-
-    profile = await db.get(RuntimeProfile, profile_id)
-    if profile is None or profile.workspace_id != workspace_id:
-        raise HTTPException(404, "runtime profile não encontrado neste workspace")
-
-
 # ── Agents CRUD ───────────────────────────────────────────────────────
 @router.post("", status_code=201)
 async def create_agent(payload: AgentCreate, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
     changes = payload.model_dump()
     _validate_agent_fields(changes)
-    await _validate_profile(db, payload.profile_id, payload.workspace_id)
     handle = (payload.handle or payload.name).strip().lstrip("@").lower().replace(" ", "-")
     agent = Agent(
         workspace_id=payload.workspace_id,
@@ -212,7 +199,6 @@ async def create_agent(payload: AgentCreate, db: AsyncSession = Depends(get_db),
         model=payload.model,
         thinking_level=payload.thinking_level,
         service_tier=payload.service_tier,
-        profile_id=payload.profile_id,
     )
     db.add(agent)
     await db.commit()
@@ -245,8 +231,6 @@ async def update_agent(agent_id: str, payload: AgentUpdate, db: AsyncSession = D
     await _require_manage(db, user, agent)
     changes = {k: getattr(payload, k) for k in payload.model_fields_set}
     _validate_agent_fields(changes)
-    if "profile_id" in changes:
-        await _validate_profile(db, changes["profile_id"], agent.workspace_id)
     for k, v in changes.items():
         setattr(agent, k, v)
     await db.commit()
@@ -579,6 +563,7 @@ async def agents_page(slug: str, request: Request, db: AsyncSession = Depends(ge
             "agents": agents,
             "tasks": tasks,
             "agent_names": agent_names,
+            "providers": providers.NAMES,
         },
     )
 

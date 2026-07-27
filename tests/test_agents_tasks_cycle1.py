@@ -1,6 +1,6 @@
 """Ciclo 1 — agents-tasks: concorrência por agente, sweeper, archive/restore,
-permissão de invocação, tasks por issue (active/runs/rerun), usage por task,
-runtime profiles e transcript com seq/type."""
+permissão de invocação, tasks por issue (active/runs/rerun), usage por task
+e transcript com seq/type."""
 from __future__ import annotations
 
 from datetime import timedelta
@@ -11,7 +11,7 @@ from tests.conftest import login
 async def _mk_agent(client, ws_id: str, name: str, **extra) -> dict:
     r = await client.post(
         "/api/agents",
-        json={"workspace_id": ws_id, "name": name, "handle": name.lower(), "runtime": "echo-fallback", **extra},
+        json={"workspace_id": ws_id, "name": name, "handle": name.lower(), "runtime": "claude", **extra},
     )
     assert r.status_code == 201, r.text
     return r.json()
@@ -340,42 +340,6 @@ async def test_task_usage_report_and_summary(client):
     assert summary["totals"]["input_tokens"] == 1000
     assert any(m["model"] == "anthropic/claude-sonnet-4-5" for m in summary["by_model"])
     assert any(a["agent_id"] == agent["id"] for a in summary["by_agent"])
-
-
-# ── Runtime profiles ──────────────────────────────────────────────────
-async def test_runtime_profiles_crud_and_agent_link(client):
-    data = await login(client, "cycle1-prof@example.com")
-    ws_id = data["workspaces"][0]["id"]
-
-    r = await client.post(
-        "/api/runtime-profiles",
-        json={"workspace_id": ws_id, "display_name": "Claude custom", "protocol_family": "claude",
-              "command_name": "claude", "fixed_args": ["--dangerously-skip-permissions"]},
-    )
-    assert r.status_code == 201, r.text
-    profile = r.json()
-
-    r = await client.get("/api/runtime-profiles", params={"workspace_id": ws_id})
-    assert any(p["id"] == profile["id"] for p in r.json())
-
-    # protocol_family limitado
-    r = await client.post(
-        "/api/runtime-profiles",
-        json={"workspace_id": ws_id, "display_name": "x", "protocol_family": "nope", "command_name": "x"},
-    )
-    assert r.status_code == 422
-
-    agent = await _mk_agent(client, ws_id, "Prof", profile_id=profile["id"])
-    assert agent["profile_id"] == profile["id"]
-
-    # em uso → não deleta
-    r = await client.delete(f"/api/runtime-profiles/{profile['id']}")
-    assert r.status_code == 409
-
-    r = await client.patch(f"/api/agents/{agent['id']}", json={"profile_id": None})
-    assert r.status_code == 200
-    r = await client.delete(f"/api/runtime-profiles/{profile['id']}")
-    assert r.status_code == 204
 
 
 # ── Cancel: pedido + guarda de status (fila) ──────────────────────────
