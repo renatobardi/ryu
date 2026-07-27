@@ -166,6 +166,7 @@ def _agents_ctx():
             {"agent_id": "a2", "kind": "lint", "status": "completed", "created_at": _NOW},
         ],
         "agent_names": {"a1": "Coder", "a2": "Reviewer"},
+        "providers": ("claude", "devin", "agy", "opencode"),
     }
 
 
@@ -199,6 +200,7 @@ def test_dashboard_uses_semantic_vocabulary(env):
 def test_agents_index_uses_semantic_vocabulary(env):
     html = render(env, "agents/index.html", _agents_ctx())
     assert_no_legacy_vocabulary(html, "agents/index.html")
+    assert '<option value="opencode">' in html  # Providers vêm do registro
     assert "bg-agent-working-bg text-agent-working-fg" in html
     assert "bg-agent-idle-bg text-agent-idle-fg" in html
     assert "bg-task-running-bg text-task-running-fg" in html

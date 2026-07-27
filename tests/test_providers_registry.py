@@ -84,6 +84,36 @@ async def test_sweeper_fails_queued_task_of_unsupported_provider(client):
     assert body["failure_reason"] == "provider_unsupported"
 
 
+async def test_explicit_command_bypasses_the_registry(client):
+    """runtime_config.command monta o argv sem consultar o registro (docs/PARITY.md)
+    — falhar essas tasks por Provider seria falso."""
+    from ryu.db import SessionLocal
+    from ryu.models import Agent, AgentTask
+    from ryu.runner.loop import _sweep
+
+    data = await login(client, "providers-bypass@example.com")
+    ws_id = data["workspaces"][0]["id"]
+
+    async with SessionLocal() as db:
+        agent = Agent(
+            workspace_id=ws_id, name="Eco", handle="eco", runtime="echo-fallback",
+            runtime_config={"command": ["echo", "{prompt}"]},
+        )
+        db.add(agent)
+        await db.commit()
+        task = AgentTask(
+            workspace_id=ws_id, agent_id=agent.id, kind="issue", status="queued", prompt="oi"
+        )
+        db.add(task)
+        await db.commit()
+        task_id = task.id
+
+    await _sweep()
+
+    r = await client.get(f"/api/tasks/{task_id}")
+    assert r.json()["status"] == "queued"
+
+
 async def test_supported_provider_task_stays_queued(client):
     from ryu.db import SessionLocal
     from ryu.models import AgentTask

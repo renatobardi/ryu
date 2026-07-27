@@ -149,7 +149,10 @@ async def _sweep() -> None:
                 reason = "agent_missing"
             elif getattr(agent, "archived_at", None):
                 reason = "agent_archived"
-            elif not providers.is_supported(agent.runtime):
+            elif not providers.is_supported(agent.runtime) and not (
+                agent.runtime_config or {}
+            ).get("command"):
+                # command explícito monta o argv sem passar pelo registro
                 reason = "provider_unsupported"
             elif (_aware(t.created_at) or now) < cutoff:
                 reason = "queued_ttl"
@@ -157,7 +160,8 @@ async def _sweep() -> None:
                 # configuração morta: esperar na fila seria mentira, não é falta de Runtime
                 t.status = "failed"
                 t.failure_reason = reason
-                t.error = t.error or adapters.resolution_failure(agent.runtime)[1]
+                _, message = adapters.resolution_failure(agent.runtime)
+                t.error = t.error or message
                 t.finished_at = now
                 events.append((t.workspace_id, "task:failed", {"task_id": t.id, "failure_reason": reason}))
             elif reason:

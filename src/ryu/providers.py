@@ -1,9 +1,9 @@
 """Registro único dos Providers suportados pelo Ryu (issue #55).
 
-Provider é a família de CLI de agente que um Runtime expõe. Adicionar um
-Provider é editar `PROVIDERS` — e só. Antes desta lista existiam quatro
-paralelas (agentes suportados, famílias de protocolo, catálogo de modelos e
-comandos de update) e nenhuma delas estava completa.
+Provider é a família de CLI de agente que um Runtime expõe. Todo fato sobre um
+Provider mora aqui: antes existiam quatro listas paralelas (agentes suportados,
+famílias de protocolo, catálogo de modelos e comandos de update) e nenhuma delas
+estava completa.
 
 Suportados: claude, devin, agy e opencode. Saíram codex, gemini, copilot,
 cursor-agent e qwen — sem migração e sem alias: agentes que os usavam falham
@@ -15,7 +15,6 @@ self-update do próprio CLI (None = atualiza pelo instalador).
 """
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 
 
@@ -94,11 +93,3 @@ def get(name: str) -> Provider | None:
 
 def is_supported(name: str) -> bool:
     return name in PROVIDERS
-
-
-def install_command(name: str, platform: str | None = None) -> str | None:
-    """Comando de instalação do Provider na plataforma do Device."""
-    spec = PROVIDERS.get(name)
-    if spec is None:
-        return None
-    return spec.install.get(platform or sys.platform)
