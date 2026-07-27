@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ryu.db import get_db
 from ryu.models import Agent, ChatSession, Issue, Member, User
 from ryu.realtime.hub import hub
-from ryu.services.auth import current_user, current_workspace
+from ryu.services.auth import current_user, current_workspace, rename_user
 
 router = APIRouter()
 pages_router = APIRouter()
@@ -195,6 +195,39 @@ async def settings_page(slug: str, request: Request, db: AsyncSession = Depends(
         "workspace/settings.html",
         {"request": request, "user": user, "workspace": ws, "active_nav": "settings", "saved": request.query_params.get("saved")},
     )
+
+
+# ── Profile ───────────────────────────────────────────────────────────
+# A conta é do usuário e atravessa workspaces; a rota mora sob /w/{slug}
+# só para a página herdar a sidebar e a topbar (CONTEXT.md: Profile).
+@pages_router.get("/w/{slug}/profile", response_class=HTMLResponse)
+async def profile_page(slug: str, request: Request, db: AsyncSession = Depends(get_db), user: User = Depends(current_user)):
+    ws = await current_workspace(slug, db, user)
+    return templates.TemplateResponse(
+        "workspace/profile.html",
+        {
+            "request": request,
+            "user": user,
+            "workspace": ws,
+            "active_nav": "profile",
+            "saved": request.query_params.get("saved"),
+            "error": request.query_params.get("error"),
+        },
+    )
+
+
+@pages_router.post("/w/{slug}/profile", response_class=HTMLResponse)
+async def profile_update(
+    slug: str,
+    request: Request,
+    name: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(current_user),
+):
+    await current_workspace(slug, db, user)
+    if not await rename_user(db, user, name):
+        return RedirectResponse(f"/w/{slug}/profile?error=blank-name", status_code=303)
+    return RedirectResponse(f"/w/{slug}/profile?saved=1", status_code=303)
 
 
 @pages_router.post("/w/{slug}/settings", response_class=HTMLResponse)

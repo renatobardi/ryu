@@ -235,6 +235,21 @@ async def find_or_create_user(db: AsyncSession, email: str) -> tuple[User, bool]
     return user, is_new
 
 
+async def rename_user(db: AsyncSession, user: User, name: str) -> bool:
+    """Renomeia o usuário (Profile: a conta é dele, não do workspace).
+
+    Devolve False para nome em branco — ninguém vira anônimo por um submit
+    vazio, e quem chama precisa saber que não gravou para não confirmar
+    uma alteração que não houve.
+    """
+    clean = name.strip()
+    if not clean:
+        return False
+    user.name = clean
+    await db.commit()
+    return True
+
+
 async def ensure_personal_workspace(db: AsyncSession, user: User) -> None:
     """Workspace pessoal + member owner no primeiro login (pula slugs reservados)."""
     from ryu.services.workspaces import is_reserved_slug

@@ -32,6 +32,14 @@ def _settings_ctx(saved=False):
     }
 
 
+def _profile_ctx(saved=False):
+    return {
+        **_COMMON_CTX,
+        "active_nav": "profile",
+        "saved": saved,
+    }
+
+
 def _members_ctx():
     return {
         **_COMMON_CTX,
@@ -110,7 +118,6 @@ def test_settings_uses_semantic_vocabulary(env):
     assert_no_legacy_vocabulary(html, "workspace/settings.html")
     assert "bg-accent hover:bg-accent-hover text-text-on-accent" in html
     assert "focus:border-border-focus" in html
-    assert "Sair (logout)" in html
 
 
 def test_settings_keeps_form_max_width(env):
@@ -118,8 +125,32 @@ def test_settings_keeps_form_max_width(env):
     assert "max-w-2xl" in html
 
 
-def test_settings_logout_button_calls_ryuLogout(env):
-    html = render(env, "workspace/settings.html", _settings_ctx())
+# ── Profile ─────────────────────────────────────────────────────────────────
+
+
+def test_profile_uses_semantic_vocabulary(env):
+    html = render(env, "workspace/profile.html", _profile_ctx(saved=True))
+    assert_no_legacy_vocabulary(html, "workspace/profile.html")
+    assert "bg-accent hover:bg-accent-hover text-text-on-accent" in html
+    assert "focus:border-border-focus" in html
+    assert "Sair (logout)" in html
+
+
+def test_profile_keeps_form_max_width(env):
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "max-w-2xl" in html
+
+
+def test_profile_name_input_is_associated_with_its_label(env):
+    """Sem `for`/`id` o leitor de tela não sabe que o rótulo é daquele campo."""
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert '<label for="profile-name"' in html
+    assert 'id="profile-name"' in html
+
+
+def test_profile_logout_button_calls_ryuLogout(env):
+    """Sair migrou de Settings para Profile (#49): a ação é sobre o usuário."""
+    html = render(env, "workspace/profile.html", _profile_ctx())
     assert 'onclick="ryuLogout()"' in html
 
 
