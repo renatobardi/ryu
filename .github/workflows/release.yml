@@ -22,15 +22,30 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-permissions:
-  # write porque o job cria a tag da release. Tag criada com o GITHUB_TOKEN não
-  # re-dispara workflow — o GitHub bloqueia recursão —, então não há loop.
-  contents: write
-  packages: write
+# Sem permissão por padrão: cada job pede o que precisa, e só ele tem.
+permissions: {}
 
 jobs:
+  # A suíte antes de qualquer publicação. Todo merge na main vira imagem e move
+  # a :latest, então uma main vermelha chegaria em produção — os checks de PR não
+  # cobrem isso porque dois PRs verdes podem se contradizer depois do merge.
+  test:
+    uses: ./.github/workflows/ci.yml
+    # Um workflow chamado nunca recebe mais permissão que o job que o chama, e o
+    # default aqui é nenhuma — sem esta linha o checkout dele falharia.
+    permissions:
+      contents: read
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
+    permissions:
+      # Ler o repositório e escrever no ghcr. Criar a tag é do job seguinte.
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      create_tag: ${{ steps.meta.outputs.create_tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,13 +156,25 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.meta.outputs.tag }}
 
-      # Depois do build, de propósito: se o build falhar, a versão não é
-      # consumida e o próximo merge tenta o mesmo número, em vez de deixar
-      # uma tag apontando para um commit sem imagem.
+  # Job separado, e depois do build de propósito: é o único que precisa escrever
+  # no repositório, e se o build falhar a versão não é consumida — o próximo
+  # merge tenta o mesmo número, em vez de deixar tag apontando para um commit
+  # sem imagem.
+  tag:
+    needs: build-and-push
+    if: needs.build-and-push.outputs.create_tag == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      # Tag criada com o GITHUB_TOKEN não re-dispara workflow — o GitHub bloqueia
+      # recursão —, então não há loop.
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Create release tag
-        if: steps.meta.outputs.create_tag == 'true'
         env:
-          TAG: ${{ steps.meta.outputs.tag }}
+          TAG: ${{ needs.build-and-push.outputs.tag }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
