@@ -112,6 +112,8 @@ def test_toggle_writes_the_cookie_the_server_reads():
     assert "ryu_theme=" in js
     assert "path=/" in js
     assert "samesite=lax" in js
+    # sem max-age o cookie é de sessão e a escolha morre ao fechar o browser
+    assert "max-age=31536000" in js
 
 
 def test_toggle_lives_in_profile_not_in_the_chrome():
