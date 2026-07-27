@@ -61,6 +61,17 @@ jobs:
             fi
             tag="$INPUT_TAG"
           elif [ "$REF_TYPE" = "tag" ]; then
+            # Mesma razão do guard acima, para o caminho mais fácil: toda
+            # publicação move a :latest, então uma tag só publica se apontar
+            # para um commit que já está na main. Sem isto bastaria empurrar
+            # v9.9.9 num commit nunca revisado para trocar a imagem de quem
+            # está em produção. Tags de release nascem na main, então o fluxo
+            # documentado no DEPLOY.md continua valendo.
+            git fetch --quiet origin main:refs/remotes/origin/main
+            if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+              echo "Tag '$REF_NAME' aponta para um commit fora da main." >&2
+              exit 1
+            fi
             tag="$REF_NAME"
           else
             # Merge na main: sobe o último número da última versão publicada
