@@ -125,6 +125,32 @@ def test_settings_keeps_form_max_width(env):
     assert "max-w-2xl" in html
 
 
+def test_settings_is_titled_workspace_settings(env):
+    """"Settings" sozinho é ambíguo agora que Profile existe (CONTEXT.md)."""
+    html = render(env, "workspace/settings.html", _settings_ctx())
+    assert "Workspace settings" in html
+
+
+def test_settings_exposes_nothing_personal(env):
+    """Trava do corte por escopo (#50): tema, tokens e sair são do Profile.
+
+    `ryuLogout` sozinho não serve de asserção — a função é global, definida no
+    base.html; o que não pode voltar para cá é a chamada.
+    """
+    html = render(env, "workspace/settings.html", _settings_ctx())
+    for smell in (
+        "ryuToggleTheme",
+        "Tema atual",
+        "Personal Access Tokens",
+        "pat-name",
+        "pat-list",
+        "createPat",
+        "loadPats",
+        'onclick="ryuLogout()"',
+    ):
+        assert smell not in html, f"{smell!r} voltou para Workspace settings"
+
+
 # ── Profile ─────────────────────────────────────────────────────────────────
 
 
@@ -152,6 +178,47 @@ def test_profile_logout_button_calls_ryuLogout(env):
     """Sair migrou de Settings para Profile (#49): a ação é sobre o usuário."""
     html = render(env, "workspace/profile.html", _profile_ctx())
     assert 'onclick="ryuLogout()"' in html
+
+
+# ── Profile: Personal Access Tokens ─────────────────────────────────────────
+# O PAT é emitido para um usuário, sem vínculo com workspace, então a seção
+# migrou de Settings para Profile (#50). A lista é montada em JS a partir de
+# /api/auth/tokens; sem runtime de JS na suíte, estes testes travam o contrato
+# do markup (os seletores e os textos que o JS injeta), não o comportamento.
+
+
+def test_profile_creates_a_named_token(env):
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "Personal Access Tokens" in html
+    assert 'id="pat-name"' in html
+    assert "Criar token" in html
+    assert "createPat()" in html
+
+
+def test_profile_shows_the_full_token_only_once(env):
+    """O token cru só existe na resposta do POST — a página avisa isso."""
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "exibido uma única vez" in html
+    assert "d.token" in html
+
+
+def test_profile_lists_active_tokens_with_the_creation_date(env):
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert 'id="pat-list"' in html
+    assert "/api/auth/tokens" in html
+    assert "t.created_at" in html
+
+
+def test_profile_revokes_a_token_and_refreshes_the_list(env):
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "Revogar" in html
+    assert "'DELETE'" in html
+
+
+def test_profile_says_so_when_there_is_no_token(env):
+    """Lista vazia com mensagem explícita, não uma caixa vazia parecendo quebrada."""
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "Nenhum token ativo." in html
 
 
 # ── Members ─────────────────────────────────────────────────────────────────

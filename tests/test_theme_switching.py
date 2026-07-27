@@ -11,7 +11,7 @@ import pytest
 from .conftest import TEMPLATES, render
 
 BASE_HTML = TEMPLATES / "base.html"
-SETTINGS_HTML = TEMPLATES / "workspace/settings.html"
+PROFILE_HTML = TEMPLATES / "workspace/profile.html"
 
 
 class _FakeRequest:
@@ -84,37 +84,38 @@ def test_html_tag_carries_the_attribute_before_any_stylesheet():
     assert raw.index("<html") < raw.index('href="/static/app.css"')
 
 
-# ── Toggle em Settings ───────────────────────────────────────────────────────
+# ── Toggle no Profile ────────────────────────────────────────────────────────
 
 
-def _settings(cookies=None):
-    ctx = dict(_CTX, active_nav="settings", saved=None)
-    return render(_ENV, "workspace/settings.html", ctx, request=_FakeRequest(cookies))
+def _profile(cookies=None):
+    ctx = dict(_CTX, active_nav="profile", saved=None)
+    return render(_ENV, "workspace/profile.html", ctx, request=_FakeRequest(cookies))
 
 
-def test_settings_offers_the_opposite_theme():
-    assert "Usar tema escuro" in _settings()
-    assert "Usar tema claro" in _settings({"ryu_theme": "dark"})
+def test_profile_offers_the_opposite_theme():
+    assert "Usar tema escuro" in _profile()
+    assert "Usar tema claro" in _profile({"ryu_theme": "dark"})
 
 
-def test_settings_reports_the_current_theme():
-    assert "Tema atual: claro" in _settings()
-    assert "Tema atual: escuro" in _settings({"ryu_theme": "dark"})
+def test_profile_reports_the_current_theme():
+    assert "Tema atual: claro" in _profile()
+    assert "Tema atual: escuro" in _profile({"ryu_theme": "dark"})
 
 
 def test_toggle_button_exposes_pressed_state():
-    assert 'aria-pressed="false"' in _settings()
-    assert 'aria-pressed="true"' in _settings({"ryu_theme": "dark"})
+    assert 'aria-pressed="false"' in _profile()
+    assert 'aria-pressed="true"' in _profile({"ryu_theme": "dark"})
 
 
 def test_toggle_writes_the_cookie_the_server_reads():
-    js = SETTINGS_HTML.read_text()
+    js = PROFILE_HTML.read_text()
     assert "ryu_theme=" in js
     assert "path=/" in js
     assert "samesite=lax" in js
 
 
-def test_toggle_lives_in_settings_not_in_the_chrome():
-    """#10 colocou o toggle em Settings, não na sidebar/topbar."""
+def test_toggle_lives_in_profile_not_in_the_chrome():
+    """O tema é do usuário (#50), então o botão mora no Profile — mas a decisão
+    do #10 de manter o alternador fora da sidebar/topbar continua valendo."""
     assert "ryuToggleTheme" not in BASE_HTML.read_text()
-    assert "ryuToggleTheme" in SETTINGS_HTML.read_text()
+    assert "ryuToggleTheme" in PROFILE_HTML.read_text()
