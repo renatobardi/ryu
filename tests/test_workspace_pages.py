@@ -131,6 +131,15 @@ def test_settings_is_titled_workspace_settings(env):
     assert "Workspace settings" in html
 
 
+def test_the_nav_entry_carries_the_full_term(env):
+    """CONTEXT.md põe "Workspace settings" no nav e manda evitar "Settings"
+    sozinho. Renderizado a partir do Profile — cujo h1 é "Profile" — para que
+    o acerto só possa vir do nav.
+    """
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "Workspace settings" in html
+
+
 def test_settings_exposes_nothing_personal(env):
     """Trava do corte por escopo (#50): tema, tokens e sair são do Profile.
 
