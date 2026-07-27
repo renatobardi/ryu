@@ -26,7 +26,7 @@ from sqlalchemy import update as sql_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ryu.config import settings
-from ryu.models import Agent, AgentRuntime, AgentTask, ApiToken, Member, Workspace
+from ryu.models import Agent, AgentRuntime, AgentTask, ApiToken, Issue, Member, Workspace
 from ryu.realtime.hub import hub
 
 log = structlog.get_logger("ryu.daemon")
@@ -199,7 +199,7 @@ async def mark_daemon_offline(db: AsyncSession, workspace_id: str, daemon_id: st
 
 async def online_providers(db: AsyncSession, workspace_id: str | None = None) -> set[tuple[str, str]]:
     """Pares (workspace_id, provider) com runtime externo online — usado pelo
-    runner in-process (modo auto) para ceder tasks ao daemon."""
+    scheduler do servidor para acordar daemons quando há fila + runtime online."""
     stmt = select(AgentRuntime).where(AgentRuntime.status == "online")
     if workspace_id:
         stmt = stmt.where(AgentRuntime.workspace_id == workspace_id)
@@ -215,6 +215,68 @@ async def agent_is_online(db: AsyncSession, agent: Agent) -> bool:
     """Derivação online/offline do agente: só runtime externo do provider."""
     pairs = await online_providers(db, agent.workspace_id)
     return (agent.workspace_id, agent.runtime) in pairs
+
+
+async def recompute_agent_status(db: AsyncSession, agent_id: str, *, error: bool = False) -> None:
+    """Recalcula status do agente a partir de tasks ativas; publica no hub."""
+    agent = await db.get(Agent, agent_id)
+    if agent is None:
+        return
+    res = await db.execute(
+        select(AgentTask.id).where(
+            AgentTask.agent_id == agent_id, AgentTask.status.in_(("dispatched", "running"))
+        )
+    )
+    active = len(res.all())
+    if getattr(agent, "archived_at", None):
+        new = "offline"
+    elif active > 0:
+        new = "working"
+    else:
+        new = "error" if error else "idle"
+    if agent.status != new:
+        agent.status = new
+        await db.commit()
+        await hub.publish(agent.workspace_id, "agent:status", {"agent_id": agent_id, "status": new})
+    else:
+        await db.commit()
+
+
+async def finish_issue_task(db: AsyncSession, task: AgentTask, agent: Agent) -> None:
+    """Comenta o resultado na issue e move para in_review."""
+    if not task.issue_id:
+        return
+    res = await db.execute(select(Issue).where(Issue.id == task.issue_id))
+    issue = res.scalars().first()
+    if issue is None:
+        return
+    from ryu.services import issues as issues_svc
+
+    try:
+        await issues_svc.create_comment(db, issue.id, "agent", agent.id, task.result_summary)
+    except Exception:
+        log.warning("daemon_comment_failed", task_id=task.id)
+    if issue.status in ("todo", "in_progress"):
+        try:
+            await issues_svc.update_issue(db, issue.id, "agent", agent.id, {"status": "in_review"})
+        except Exception:
+            log.warning("daemon_issue_move_failed", task_id=task.id)
+    if issue.creator_type == "member" and issue.creator_id and not issue.creator_id.startswith("agent:"):
+        try:
+            from ryu.services.inbox import notify
+
+            await notify(
+                db,
+                issue.workspace_id,
+                issue.creator_id,
+                "attention",
+                f"{issue.key} pronta para revisão",
+                f"O agente {agent.name} finalizou a task e comentou na issue.",
+                issue_id=issue.id,
+                group="agent_activity",
+            )
+        except Exception:
+            log.warning("daemon_notify_failed", task_id=task.id)
 
 
 # ── Claim / lease (daemon-auth) ───────────────────────────────────────

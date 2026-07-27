@@ -34,7 +34,6 @@ log = structlog.get_logger("ryu.runner")
 POLL_INTERVAL = 2.0
 
 ACTIVE_STATUSES = ("queued", "dispatched", "running")
-RETRYABLE_REASONS = ("crash", "timeout", "lease_expired")
 
 _runner_task: asyncio.Task | None = None
 _stopping = asyncio.Event()
@@ -54,69 +53,6 @@ def _settings():
     from ryu.config import settings
 
     return settings
-
-
-async def _recompute_agent_status(db, agent_id: str, *, error: bool = False) -> None:
-    agent = await db.get(Agent, agent_id)
-    if agent is None:
-        return
-    res = await db.execute(
-        select(AgentTask.id).where(
-            AgentTask.agent_id == agent_id, AgentTask.status.in_(("dispatched", "running"))
-        )
-    )
-    active = len(res.all())
-    if getattr(agent, "archived_at", None):
-        new = "offline"
-    elif active > 0:
-        new = "working"
-    else:
-        new = "error" if error else "idle"
-    if agent.status != new:
-        agent.status = new
-        await db.commit()
-        await hub.publish(agent.workspace_id, "agent:status", {"agent_id": agent_id, "status": new})
-    else:
-        await db.commit()
-
-
-async def _finish_issue_task(db, task: AgentTask, agent: Agent) -> None:
-    """Comenta o resultado na issue e move para in_review."""
-    if not task.issue_id:
-        return
-    res = await db.execute(select(Issue).where(Issue.id == task.issue_id))
-    issue = res.scalars().first()
-    if issue is None:
-        return
-    # import tardio para evitar ciclo issues -> (nada) ; issues não importa runner
-    from ryu.services import issues as issues_svc
-
-    try:
-        await issues_svc.create_comment(db, issue.id, "agent", agent.id, task.result_summary)
-    except Exception:
-        log.warning("runner_comment_failed", task_id=task.id)
-    if issue.status in ("todo", "in_progress"):
-        try:
-            await issues_svc.update_issue(db, issue.id, "agent", agent.id, {"status": "in_review"})
-        except Exception:
-            log.warning("runner_issue_move_failed", task_id=task.id)
-    # notifica o criador (se for membro)
-    if issue.creator_type == "member" and issue.creator_id and not issue.creator_id.startswith("agent:"):
-        try:
-            from ryu.services.inbox import notify
-
-            await notify(
-                db,
-                issue.workspace_id,
-                issue.creator_id,
-                "attention",
-                f"{issue.key} pronta para revisão",
-                f"O agente {agent.name} finalizou a task e comentou na issue.",
-                issue_id=issue.id,
-                group="agent_activity",
-            )
-        except Exception:
-            log.warning("runner_notify_failed", task_id=task.id)
 
 
 # ── Scheduler (acorda daemons conectados) ─────────────────────────────
@@ -147,7 +83,7 @@ async def _schedule() -> None:
     for wid, runtime in pending:
         if (wid, runtime) in pairs:
             try:
-                await daemon_hub.notify_task_available(wid, {"workspace_id": wid})
+                await daemon_hub.notify_task_available(wid, {"workspace_id": wid, "provider": runtime})
             except Exception:
                 log.warning("runner_schedule_wakeup_failed", workspace_id=wid, runtime=runtime)
 
@@ -225,9 +161,11 @@ async def _sweep() -> None:
             touched_agents.add(working.id)
     for wid, ev, data in events:
         await hub.publish(wid, ev, data)
+    from ryu.services.daemon import recompute_agent_status
+
     async with SessionLocal() as db:
         for agent_id in touched_agents:
-            await _recompute_agent_status(db, agent_id)
+            await recompute_agent_status(db, agent_id)
 
 
 # ── GC de work_dirs ───────────────────────────────────────────────────

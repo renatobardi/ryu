@@ -100,6 +100,7 @@ class Daemon:
         self.poll_interval = float(os.environ.get("RYU_DAEMON_POLL_INTERVAL", "3") or 3)
         self.heartbeat_interval = float(os.environ.get("RYU_DAEMON_HEARTBEAT_INTERVAL", "15") or 15)
         self.max_concurrent = int(os.environ.get("RYU_DAEMON_MAX_CONCURRENT_TASKS", "4") or 4)
+        self.task_timeout_minutes = float(os.environ.get("RYU_DAEMON_TASK_TIMEOUT_MINUTES", "30") or 30)
         self.workspaces_root = cliconf.workspaces_root(profile)
         self.detected = [r for r in detect_runtimes(with_version=True) if r["available"]]
         # workspace_id -> {"token": rdt_, "runtimes": [{id, provider}]}
@@ -350,6 +351,7 @@ class Daemon:
                                 return
 
             wd = asyncio.get_event_loop().create_task(_watchdog())
+            timed_out = False
             try:
                 assert proc.stdout is not None
                 async for raw in proc.stdout:
@@ -360,7 +362,16 @@ class Daemon:
                     batch.append({"role": "stdout", "type": "stdout", "content": line[:4000]})
                     if len(batch) >= 20:
                         await _flush()
-                await proc.wait()
+                try:
+                    await asyncio.wait_for(proc.wait(), timeout=self.task_timeout_minutes * 60)
+                except asyncio.TimeoutError:
+                    timed_out = True
+                    with contextlib.suppress(ProcessLookupError):
+                        proc.terminate()
+                    await asyncio.sleep(5)
+                    if proc.returncode is None:
+                        with contextlib.suppress(ProcessLookupError):
+                            proc.kill()
             finally:
                 wd.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
@@ -373,17 +384,22 @@ class Daemon:
                 _log(f"task {task_id[:8]}: cancelada (ack)")
                 return
             summary = "\n".join(lines[-50:]) or "(sem saída)"
-            if proc.returncode == 0:
+            if proc.returncode == 0 and not timed_out:
                 await c.post(f"/api/daemon/tasks/{task_id}/complete",
                              json={"result_summary": summary[:16000]})
                 _log(f"task {task_id[:8]}: completed")
             else:
+                reason = "timeout" if timed_out else "crash"
+                error_msg = (
+                    f"timeout de {int(self.task_timeout_minutes)}min excedido"
+                    if timed_out
+                    else f"runtime saiu com código {proc.returncode}: {summary[-500:]}"
+                )
                 await c.post(
                     f"/api/daemon/tasks/{task_id}/fail",
-                    json={"error": f"runtime saiu com código {proc.returncode}: {summary[-500:]}",
-                          "failure_reason": "crash"},
+                    json={"error": error_msg, "failure_reason": reason},
                 )
-                _log(f"task {task_id[:8]}: failed (rc={proc.returncode})")
+                _log(f"task {task_id[:8]}: failed ({reason})")
 
     # ── WS wakeup (opcional — precisa da lib `websockets`) ────────────
     async def ws_listener(self) -> None:
@@ -407,7 +423,15 @@ class Daemon:
                         except ValueError:
                             continue
                         if msg.get("type") == "daemon:task_available":
-                            self._wakeup.set()
+                            payload = msg.get("payload") or {}
+                            provider = payload.get("provider")
+                            # só acorda se o daemon tem um runtime com aquele provider
+                            if provider is None or any(
+                                rt["provider"] == provider
+                                for info in self.registered.values()
+                                for rt in info["runtimes"]
+                            ):
+                                self._wakeup.set()
             except Exception:
                 await asyncio.sleep(5)
 
