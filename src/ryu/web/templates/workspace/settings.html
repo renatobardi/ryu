@@ -6,23 +6,21 @@
 </div>
 
 <div class="px-6 py-6 space-y-8 max-w-2xl">
-  <section>
-    {% if saved %}
-    <p class="text-xs text-success-fg mb-2">Alterações salvas.</p>
-    {% endif %}
-    <form method="post" action="/w/{{ workspace.slug }}/settings" class="space-y-3 bg-surface-card border border-border-default rounded-lg p-4">
-      <div>
-        <label class="block text-xs text-text-subtle mb-1">Nome do workspace</label>
-        <input name="name" value="{{ workspace.name }}" required
-               class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm w-full focus:outline-none focus:border-border-focus">
-      </div>
-      <div>
-        <label class="block text-xs text-text-subtle mb-1">Issue prefix</label>
-        <input name="issue_prefix" value="{{ workspace.issue_prefix }}" required maxlength="10"
-               class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm w-32 font-mono uppercase focus:outline-none focus:border-border-focus">
-      </div>
-      <button class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm px-4 py-1.5 rounded-md">Salvar</button>
-    </form>
-  </section>
+  {% if saved %}
+  <p class="text-xs text-success-fg mb-2">Alterações salvas.</p>
+  {% endif %}
+  <form method="post" action="/w/{{ workspace.slug }}/settings" class="space-y-3 bg-surface-card border border-border-default rounded-lg p-4">
+    <div>
+      <label class="block text-xs text-text-subtle mb-1">Nome do workspace</label>
+      <input name="name" value="{{ workspace.name }}" required
+             class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm w-full focus:outline-none focus:border-border-focus">
+    </div>
+    <div>
+      <label class="block text-xs text-text-subtle mb-1">Issue prefix</label>
+      <input name="issue_prefix" value="{{ workspace.issue_prefix }}" required maxlength="10"
+             class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm w-32 font-mono uppercase focus:outline-none focus:border-border-focus">
+    </div>
+    <button class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm px-4 py-1.5 rounded-md">Salvar</button>
+  </form>
 </div>
 {% endblock %}
