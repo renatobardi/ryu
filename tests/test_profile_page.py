@@ -76,10 +76,10 @@ async def test_the_new_name_reaches_the_sidebar_footer_without_relogin(client):
     assert "Nome Novo" in r.text
 
 
-async def test_revoking_a_token_takes_it_off_the_list(client):
+async def test_revoking_a_token_removes_it_from_the_api_listing(client):
     """A lista da página é montada a partir de /api/auth/tokens, e o botão
-    Revogar só chama o DELETE — sem cobertura aqui, "some da lista" (#50) não
-    tem quem prove.
+    Revogar só chama o DELETE — o nome fala da API porque é só até aí que este
+    teste chega; sem ele, "some da lista" (#50) não tem quem prove.
     """
     await login(client, "revoke@example.com")
 
