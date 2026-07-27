@@ -39,6 +39,7 @@
         <button onclick="createPat()" class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm px-4 py-1.5 rounded-md">Criar token</button>
       </div>
       <div id="pat-new" class="hidden text-xs bg-surface-sunken border border-success-fg rounded-md p-3 font-mono break-all text-success-fg"></div>
+      <p id="pat-error" role="alert" class="hidden text-xs text-danger-fg"></p>
       <ul id="pat-list" class="divide-y divide-border-hairline text-sm"></ul>
     </div>
   </section>
@@ -88,20 +89,41 @@ async function loadPats() {
     ul.innerHTML = '<li class="py-2 text-text-subtle text-xs">Nenhum token ativo.</li>';
     return;
   }
+  // O nome do token é texto do usuário: vai por textContent, nunca por
+  // innerHTML — senão um nome como `<img src=x onerror=…>` executa aqui.
   for (const t of items) {
     const li = document.createElement('li');
     li.className = 'py-2 flex items-center justify-between';
-    li.innerHTML = `<span class="text-text-secondary">${t.name || '(sem nome)'} <span class="text-xs text-text-subtle">· ${(t.created_at || '').slice(0, 10)}</span></span>`;
+    const label = document.createElement('span');
+    label.className = 'text-text-secondary';
+    const name = document.createElement('span');
+    name.textContent = t.name || '(sem nome)';
+    const when = document.createElement('span');
+    when.className = 'text-xs text-text-subtle';
+    when.textContent = ` · ${(t.created_at || '').slice(0, 10)}`;
+    label.appendChild(name);
+    label.appendChild(when);
+    li.appendChild(label);
     const btn = document.createElement('button');
     btn.textContent = 'Revogar';
     btn.className = 'text-xs text-danger-fg';
     btn.onclick = async () => {
-      await fetch(`/api/auth/tokens/${t.id}`, {method: 'DELETE'});
+      const r = await fetch(`/api/auth/tokens/${t.id}`, {method: 'DELETE'});
+      if (!r.ok) return patError('Não foi possível revogar o token.');
+      clearPatError();
       loadPats();
     };
     li.appendChild(btn);
     ul.appendChild(li);
   }
+}
+function patError(message) {
+  const box = document.getElementById('pat-error');
+  box.textContent = message;
+  box.classList.remove('hidden');
+}
+function clearPatError() {
+  document.getElementById('pat-error').classList.add('hidden');
 }
 async function createPat() {
   const name = document.getElementById('pat-name').value || '';
@@ -110,7 +132,11 @@ async function createPat() {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({name}),
   });
-  if (!r.ok) return;
+  if (!r.ok) {
+    patError('Não foi possível criar o token.');
+    return;
+  }
+  clearPatError();
   const d = await r.json();
   const box = document.getElementById('pat-new');
   box.textContent = 'Copie agora (exibido uma única vez): ' + d.token;
