@@ -53,8 +53,10 @@ jobs:
           if [ "$EVENT" = "workflow_dispatch" ]; then
             # Publicar de outro ref envenenaria a :latest, que é o que o
             # ryu-up.sh puxa. O nome da imagem é livre; a origem não.
-            if [ "$REF_NAME" != "main" ]; then
-              echo "Release manual só a partir da main (veio de '$REF_NAME')." >&2
+            # O tipo entra na condição porque uma *tag* chamada `main` também
+            # chega aqui com REF_NAME=main.
+            if [ "$REF_TYPE" != "branch" ] || [ "$REF_NAME" != "main" ]; then
+              echo "Release manual só a partir da branch main (veio de $REF_TYPE '$REF_NAME')." >&2
               exit 1
             fi
             tag="$INPUT_TAG"
@@ -84,7 +86,18 @@ jobs:
             create_tag=true
             echo "última versão: $latest -> nova: $tag"
           fi
-          echo "tag=${tag:-latest}" >> "$GITHUB_OUTPUT"
+          # Daqui o valor vai para o GITHUB_OUTPUT e de lá para a referência da
+          # imagem. Uma quebra de linha — possível no input do dispatch via API,
+          # não pela UI — forjaria linhas de output (create_tag=true) e uma
+          # segunda imagem no `tags:` do build. Nome de imagem não precisa de
+          # mais que isto.
+          case "$tag" in
+            "" | *[!A-Za-z0-9._-]*)
+              echo "Tag inválida: '$tag' (permitido: A-Z a-z 0-9 . _ -)." >&2
+              exit 1
+              ;;
+          esac
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "create_tag=${create_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU

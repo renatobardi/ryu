@@ -98,7 +98,7 @@ O último número é um contador: sobe a cada merge, seja uma correção de uma 
 Duas garantias que valem saber:
 
 - **A tag só nasce se o build passar.** Ela é criada depois da publicação, então um build quebrado não consome o número nem deixa tag apontando para um commit sem imagem.
-- **Publicações são serializadas** (`concurrency`). Dois merges próximos não disputam a mesma versão: o segundo espera e recalcula.
+- **Publicações são serializadas** (`concurrency`). Dois merges próximos não disputam a mesma versão: o segundo espera e recalcula. Com três ou mais em sequência é serialização, não fila: o GitHub guarda só um run em espera por grupo e **cancela o do meio**. A `main` acaba publicada no commit mais novo, mas os commits intermediários ficam sem imagem e sem tag — e o run cancelado aparece cinza, não vermelho.
 
 Só tags no formato exato `vX.Y.Z` entram na conta. Uma `v1.0.0-rc1` ou `v0.4.7.1` é ignorada pelo cálculo — sem isso, a aritmética quebraria ou o número andaria para trás.
 
