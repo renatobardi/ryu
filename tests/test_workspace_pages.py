@@ -204,6 +204,15 @@ def test_profile_creates_a_named_token(env):
     assert "createPat()" in html
 
 
+def test_profile_token_name_input_has_an_accessible_name(env):
+    """Placeholder não é rótulo — ele desaparece ao digitar. O campo Nome, na
+    mesma página, resolve isso com <label for>; aqui o input divide uma linha
+    flex com o botão, então o nome acessível vem por aria-label.
+    """
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert 'aria-label="Nome do token"' in html
+
+
 def test_profile_shows_the_full_token_only_once(env):
     """O token cru só existe na resposta do POST — a página avisa isso."""
     html = render(env, "workspace/profile.html", _profile_ctx())
