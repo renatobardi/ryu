@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  # O release chama este workflow antes de publicar. Chamar, em vez de copiar os
+  # steps, é o que garante que o gate roda exatamente o que o CI roda.
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   test:

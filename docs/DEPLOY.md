@@ -95,8 +95,12 @@ Não é preciso fazer nada — nem tag, nem comando. A tag é criada pelo própr
 
 O último número é um contador: sobe a cada merge, seja uma correção de uma linha ou uma migração inteira. Os dois primeiros ficam parados até alguém criar uma tag à mão.
 
-Duas garantias que valem saber:
+Três garantias que valem saber:
 
+- **Nada é publicado com a suíte vermelha.** O `release.yml` chama o próprio
+  `ci.yml` antes de buildar — chamar, e não copiar os steps, é o que impede os
+  dois divergirem. O check obrigatório de PR não cobre isto sozinho: dois PRs
+  verdes podem se contradizer depois do merge.
 - **A tag só nasce se o build passar.** Ela é criada depois da publicação, então um build quebrado não consome o número nem deixa tag apontando para um commit sem imagem.
 - **Publicações são serializadas** (`concurrency`). Dois merges próximos não disputam a mesma versão: o segundo espera e recalcula. Com três ou mais em sequência é serialização, não fila: o GitHub guarda só um run em espera por grupo e **cancela o do meio**. A `main` acaba publicada no commit mais novo, mas os commits intermediários ficam sem imagem e sem tag — e o run cancelado aparece cinza, não vermelho.
 
