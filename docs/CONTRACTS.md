@@ -9,8 +9,7 @@ Regras para todos os agentes construtores:
 5. Eventos realtime: `from ryu.realtime.hub import hub; await hub.publish(workspace_id, "issue:created", {...})`. Use a taxonomia comentada no hub.py.
 6. Auth: use `from ryu.services.auth import current_user` (dependency FastAPI que retorna User) — o agente de auth é quem a implementa; os demais apenas importam.
 7. UI: HTMX + Jinja2 + Tailwind (CDN). Template base em `web/templates/base.html`; os demais estendem `{% extends "base.html" %}`. Nunca `style` inline.
-   **Hoje:** tema escuro fixo (`<html class="dark">`), telas em `zinc-*`/`violet-*`. Siga esse padrão e não introduza escala nova.
-   **Alvo, especificado mas NÃO aplicado:** tema claro+escuro por `data-theme`, accent ciano, ícones Lucide, cor só por classe semântica. Spec, armadilhas e ordem de execução em `docs/tailwind-config-mapping.md` — as classes semânticas ainda não existem, então não as use antes de cumprir o checklist daquele doc.
+   **Hoje** (migração do design system aplicada, #27): tema claro+escuro por `data-theme` no `<html>`, decidido no servidor a partir do cookie `ryu_theme` — o botão que grava o cookie mora no Profile. Cor só por classe semântica (`surface-*`, `text-*`, `border-*`, `accent`, `success-fg`/`danger-fg`, `status-*`), accent ciano, ícones Lucide. A paleta crua do Tailwind (`zinc-*`, `violet-*`, `text-red-*` etc.) é proibida, e a trava é `LEGACY_VOCABULARY` em `tests/conftest.py`. O mapa token → variável CSS está em `docs/tailwind-config-mapping.md`.
 8. Prefixos de rota: `/api/auth`, `/api/issues`, `/api/agents`, `/api/tasks`, `/api/chat`, `/api/skills`, `/api/autopilots`, `/api/inbox`. Páginas HTML em `/w/{slug}/...`.
 9. Status de issue: backlog|todo|in_progress|in_review|done|blocked|cancelled. Task: queued|dispatched|running|completed|failed|cancelled.
 10. Sem dependências novas fora do pyproject. Sem type-checker frescuras: código que roda > código bonito.

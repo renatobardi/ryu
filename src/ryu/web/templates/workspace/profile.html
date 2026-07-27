@@ -29,10 +29,121 @@
     </form>
   </section>
 
+  <!-- PATs -->
+  <section>
+    <h2 class="text-sm font-medium text-text-secondary mb-3">Personal Access Tokens (ryu_)</h2>
+    <div class="bg-surface-card border border-border-default rounded-lg p-4 space-y-3">
+      <div class="flex gap-2">
+        <input id="pat-name" aria-label="Nome do token" placeholder="Nome do token (ex.: cli local)"
+               class="bg-surface-input border border-border-strong rounded-md px-3 py-1.5 text-sm flex-1 focus:outline-none focus:border-border-focus">
+        <button onclick="createPat()" class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm px-4 py-1.5 rounded-md">Criar token</button>
+      </div>
+      <div id="pat-new" class="hidden text-xs bg-surface-sunken border border-success-fg rounded-md p-3 font-mono break-all text-success-fg"></div>
+      <p id="pat-error" role="alert" class="hidden text-xs text-danger-fg"></p>
+      <ul id="pat-list" class="divide-y divide-border-hairline text-sm"></ul>
+    </div>
+  </section>
+
+  <!-- Aparência -->
+  <section>
+    <h2 class="text-sm font-medium text-text-secondary mb-3">Aparência</h2>
+    {% set dark = request.cookies.get('ryu_theme') == 'dark' %}
+    <div class="flex items-center gap-3">
+      <button type="button" onclick="ryuToggleTheme()"
+              aria-describedby="theme-state"
+              class="bg-surface-sunken hover:bg-surface-active text-text-body text-sm px-4 py-1.5 rounded-md inline-flex items-center gap-2">
+        <i data-lucide="{{ 'sun' if dark else 'moon' }}" class="w-4 h-4"></i>
+        {{ 'Usar tema claro' if dark else 'Usar tema escuro' }}
+      </button>
+      <span id="theme-state" class="text-xs text-text-subtle">Tema atual: {{ 'escuro' if dark else 'claro' }}</span>
+    </div>
+  </section>
+
   <!-- Sessão -->
   <section>
     <h2 class="text-sm font-medium text-text-secondary mb-3">Sessão</h2>
     <button onclick="ryuLogout()" class="bg-surface-sunken hover:bg-surface-active text-text-body text-sm px-4 py-1.5 rounded-md">Sair (logout)</button>
   </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// O tema é lido no servidor a cada request (base.html), então basta gravar o
+// cookie e recarregar — a página volta já com o data-theme certo, sem flash.
+// samesite/path espelham o cookie de auth; 1 ano, por browser, sem vínculo
+// com o usuário (models.py não é tocado — CONTRACTS.md regra 1).
+function ryuToggleTheme() {
+  const dark = document.cookie.split('; ').some(c => c === 'ryu_theme=dark');
+  document.cookie = `ryu_theme=${dark ? 'light' : 'dark'}; path=/; max-age=31536000; samesite=lax`;
+  location.reload();
+}
+
+async function loadPats() {
+  const r = await fetch('/api/auth/tokens');
+  if (!r.ok) return patError('Não foi possível carregar os tokens.');
+  const items = await r.json();
+  const ul = document.getElementById('pat-list');
+  ul.innerHTML = '';
+  if (items.length === 0) {
+    ul.innerHTML = '<li class="py-2 text-text-subtle text-xs">Nenhum token ativo.</li>';
+    return;
+  }
+  // O nome do token é texto do usuário: vai por textContent, nunca por
+  // innerHTML — senão um nome como `<img src=x onerror=…>` executa aqui.
+  for (const t of items) {
+    const li = document.createElement('li');
+    li.className = 'py-2 flex items-center justify-between';
+    const label = document.createElement('span');
+    label.className = 'text-text-secondary';
+    const name = document.createElement('span');
+    name.textContent = t.name || '(sem nome)';
+    const when = document.createElement('span');
+    when.className = 'text-xs text-text-subtle';
+    when.textContent = ` · ${(t.created_at || '').slice(0, 10)}`;
+    label.appendChild(name);
+    label.appendChild(when);
+    li.appendChild(label);
+    const btn = document.createElement('button');
+    btn.textContent = 'Revogar';
+    btn.className = 'text-xs text-danger-fg';
+    btn.onclick = async () => {
+      const r = await fetch(`/api/auth/tokens/${t.id}`, {method: 'DELETE'});
+      if (!r.ok) return patError('Não foi possível revogar o token.');
+      clearPatError();
+      loadPats();
+    };
+    li.appendChild(btn);
+    ul.appendChild(li);
+  }
+}
+function patError(message) {
+  const box = document.getElementById('pat-error');
+  box.textContent = message;
+  box.classList.remove('hidden');
+}
+function clearPatError() {
+  document.getElementById('pat-error').classList.add('hidden');
+}
+async function createPat() {
+  const name = document.getElementById('pat-name').value || '';
+  const r = await fetch('/api/auth/tokens', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name}),
+  });
+  if (!r.ok) {
+    patError('Não foi possível criar o token.');
+    return;
+  }
+  clearPatError();
+  const d = await r.json();
+  const box = document.getElementById('pat-new');
+  box.textContent = 'Copie agora (exibido uma única vez): ' + d.token;
+  box.classList.remove('hidden');
+  document.getElementById('pat-name').value = '';
+  loadPats();
+}
+loadPats();
+</script>
 {% endblock %}

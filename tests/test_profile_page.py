@@ -76,6 +76,29 @@ async def test_the_new_name_reaches_the_sidebar_footer_without_relogin(client):
     assert "Nome Novo" in r.text
 
 
+async def test_revoking_a_token_removes_it_from_the_api_listing(client):
+    """A lista da página é montada a partir de /api/auth/tokens, e o botão
+    Revogar só chama o DELETE — o nome fala da API porque é só até aí que este
+    teste chega; sem ele, "some da lista" (#50) não tem quem prove.
+    """
+    await login(client, "revoke@example.com")
+
+    r = await client.post("/api/auth/tokens", json={"name": "cli local"})
+    assert r.status_code == 200, r.text
+    tok = r.json()
+
+    r = await client.get("/api/auth/tokens")
+    row = next(t for t in r.json() if t["id"] == tok["id"])
+    assert row["name"] == "cli local"
+    assert row["created_at"], "a lista mostra a data de criação"
+
+    r = await client.delete(f"/api/auth/tokens/{tok['id']}")
+    assert r.status_code == 200, r.text
+
+    r = await client.get("/api/auth/tokens")
+    assert all(t["id"] != tok["id"] for t in r.json())
+
+
 async def test_leaving_the_session_moved_to_profile(client):
     """Sair é ação sobre o usuário, não sobre o workspace."""
     data = await login(client, "logout@example.com")

@@ -125,6 +125,51 @@ def test_settings_keeps_form_max_width(env):
     assert "max-w-2xl" in html
 
 
+def test_settings_is_titled_workspace_settings(env):
+    """"Settings" sozinho é ambíguo agora que Profile existe (CONTEXT.md)."""
+    html = render(env, "workspace/settings.html", _settings_ctx())
+    assert "Workspace settings" in html
+
+
+def test_settings_inputs_are_associated_with_their_labels(env):
+    """Mesma trava do campo de nome no Profile: sem `for`/`id` o leitor de tela
+    não sabe de qual campo é o rótulo.
+    """
+    html = render(env, "workspace/settings.html", _settings_ctx())
+    for field in ("ws-name", "ws-issue-prefix"):
+        assert f'<label for="{field}"' in html
+        assert f'id="{field}"' in html
+
+
+def test_the_nav_entry_carries_the_full_term(env):
+    """CONTEXT.md põe "Workspace settings" no nav e manda evitar "Settings"
+    sozinho. Renderizado a partir do Profile — cujo h1 é "Profile" — para que
+    o acerto só possa vir do nav.
+    """
+    html = render(env, "workspace/profile.html", _profile_ctx())
+    assert "Workspace settings" in html
+
+
+def test_settings_exposes_nothing_personal(env):
+    """Trava do corte por escopo (#50): tema, tokens e sair são do Profile.
+
+    `ryuLogout` sozinho não serve de asserção — a função é global, definida no
+    base.html; o que não pode voltar para cá é a chamada.
+    """
+    html = render(env, "workspace/settings.html", _settings_ctx())
+    for smell in (
+        "ryuToggleTheme",
+        "Tema atual",
+        "Personal Access Tokens",
+        "pat-name",
+        "pat-list",
+        "createPat",
+        "loadPats",
+        'onclick="ryuLogout()"',
+    ):
+        assert smell not in html, f"{smell!r} voltou para Workspace settings"
+
+
 # ── Profile ─────────────────────────────────────────────────────────────────
 
 

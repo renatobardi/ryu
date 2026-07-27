@@ -151,7 +151,7 @@
     {{ nav_item(href='/w/' ~ workspace.slug ~ '/members', icon_name='users', label='Members', active=active_nav is defined and active_nav == 'members') }}
     {{ nav_item(href='/w/' ~ workspace.slug ~ '/runtimes', icon_name='puzzle', label='Runtimes', active=active_nav is defined and active_nav == 'runtimes') }}
     {{ nav_item(href='/w/' ~ workspace.slug ~ '/skills', icon_name='book-open', label='Skills', active=active_nav is defined and active_nav == 'skills') }}
-    {{ nav_item(href='/w/' ~ workspace.slug ~ '/settings', icon_name='settings', label='Settings', active=active_nav is defined and active_nav == 'settings') }}
+    {{ nav_item(href='/w/' ~ workspace.slug ~ '/settings', icon_name='settings', label='Workspace settings', active=active_nav is defined and active_nav == 'settings') }}
   {% endcall %}
   {% endif %}
 

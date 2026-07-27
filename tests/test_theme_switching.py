@@ -8,17 +8,10 @@ from __future__ import annotations
 
 import pytest
 
-from .conftest import TEMPLATES, render
+from .conftest import TEMPLATES, FakeRequest, render
 
 BASE_HTML = TEMPLATES / "base.html"
-SETTINGS_HTML = TEMPLATES / "workspace/settings.html"
-
-
-class _FakeRequest:
-    """Só o que os templates tocam: request.cookies."""
-
-    def __init__(self, cookies: dict | None = None):
-        self.cookies = cookies or {}
+PROFILE_HTML = TEMPLATES / "workspace/profile.html"
 
 
 _CTX = {
@@ -27,41 +20,35 @@ _CTX = {
 }
 
 
-def _base(cookies=None):
-    return render(_ENV, "base.html", _CTX, request=_FakeRequest(cookies))
-
-
-@pytest.fixture(scope="module", autouse=True)
-def _bind_env(env):
-    global _ENV
-    _ENV = env
+def _base(env, cookies=None):
+    return render(env, "base.html", _CTX, request=FakeRequest(cookies))
 
 
 # ── Default e leitura do cookie ──────────────────────────────────────────────
 
 
-def test_no_cookie_renders_light():
+def test_no_cookie_renders_light(env):
     """Decisão do #10: sem cookie, o padrão é claro."""
-    assert 'data-theme="light"' in _base()
+    assert 'data-theme="light"' in _base(env)
 
 
-def test_cookie_dark_renders_dark():
-    assert 'data-theme="dark"' in _base({"ryu_theme": "dark"})
+def test_cookie_dark_renders_dark(env):
+    assert 'data-theme="dark"' in _base(env, {"ryu_theme": "dark"})
 
 
-def test_cookie_light_renders_light():
-    assert 'data-theme="light"' in _base({"ryu_theme": "light"})
+def test_cookie_light_renders_light(env):
+    assert 'data-theme="light"' in _base(env, {"ryu_theme": "light"})
 
 
 @pytest.mark.parametrize("value", ["", "DARK", "escuro", "true", "1", "dark ", "auto"])
-def test_unrecognised_cookie_falls_back_to_light(value):
+def test_unrecognised_cookie_falls_back_to_light(env, value):
     """Só 'dark' liga o escuro; o resto cai no :root, que é claro."""
-    assert 'data-theme="light"' in _base({"ryu_theme": value})
+    assert 'data-theme="light"' in _base(env, {"ryu_theme": value})
 
 
-def test_cookie_cannot_inject_into_the_attribute():
+def test_cookie_cannot_inject_into_the_attribute(env):
     """O valor nunca é interpolado cru — atributo só pode ser light ou dark."""
-    html = _base({"ryu_theme": '" onload="alert(1)'})
+    html = _base(env, {"ryu_theme": '" onload="alert(1)'})
     assert "onload" not in html
     assert 'data-theme="light"' in html
 
@@ -84,37 +71,50 @@ def test_html_tag_carries_the_attribute_before_any_stylesheet():
     assert raw.index("<html") < raw.index('href="/static/app.css"')
 
 
-# ── Toggle em Settings ───────────────────────────────────────────────────────
+# ── Toggle no Profile ────────────────────────────────────────────────────────
 
 
-def _settings(cookies=None):
-    ctx = dict(_CTX, active_nav="settings", saved=None)
-    return render(_ENV, "workspace/settings.html", ctx, request=_FakeRequest(cookies))
+def _profile(env, cookies=None):
+    ctx = dict(_CTX, active_nav="profile", saved=None)
+    return render(env, "workspace/profile.html", ctx, request=FakeRequest(cookies))
 
 
-def test_settings_offers_the_opposite_theme():
-    assert "Usar tema escuro" in _settings()
-    assert "Usar tema claro" in _settings({"ryu_theme": "dark"})
+def test_profile_offers_the_opposite_theme(env):
+    assert "Usar tema escuro" in _profile(env)
+    assert "Usar tema claro" in _profile(env, {"ryu_theme": "dark"})
 
 
-def test_settings_reports_the_current_theme():
-    assert "Tema atual: claro" in _settings()
-    assert "Tema atual: escuro" in _settings({"ryu_theme": "dark"})
+def test_profile_reports_the_current_theme(env):
+    assert "Tema atual: claro" in _profile(env)
+    assert "Tema atual: escuro" in _profile(env, {"ryu_theme": "dark"})
 
 
-def test_toggle_button_exposes_pressed_state():
-    assert 'aria-pressed="false"' in _settings()
-    assert 'aria-pressed="true"' in _settings({"ryu_theme": "dark"})
+def test_toggle_button_points_at_the_text_that_states_the_theme(env):
+    """`aria-pressed` mentia no escuro: o nome do botão oferecia "Usar tema
+    claro" enquanto `pressed=true` se referia ao escuro — o leitor de tela
+    anunciava "Usar tema claro, pressionado". O estado passa a vir do texto ao
+    lado, ligado por `aria-describedby`; substitui o `aria-pressed` que a #50
+    pedia ao pé da letra.
+    """
+    assert "aria-pressed" not in _profile(env)
+    for cookies, current in ((None, "claro"), ({"ryu_theme": "dark"}, "escuro")):
+        html = _profile(env, cookies)
+        assert 'aria-describedby="theme-state"' in html
+        assert 'id="theme-state"' in html
+        assert f"Tema atual: {current}" in html
 
 
 def test_toggle_writes_the_cookie_the_server_reads():
-    js = SETTINGS_HTML.read_text()
+    js = PROFILE_HTML.read_text()
     assert "ryu_theme=" in js
     assert "path=/" in js
     assert "samesite=lax" in js
+    # sem max-age o cookie é de sessão e a escolha morre ao fechar o browser
+    assert "max-age=31536000" in js
 
 
-def test_toggle_lives_in_settings_not_in_the_chrome():
-    """#10 colocou o toggle em Settings, não na sidebar/topbar."""
+def test_toggle_lives_in_profile_not_in_the_chrome():
+    """O tema é do usuário (#50), então o botão mora no Profile — mas a decisão
+    do #10 de manter o alternador fora da sidebar/topbar continua valendo."""
     assert "ryuToggleTheme" not in BASE_HTML.read_text()
-    assert "ryuToggleTheme" in SETTINGS_HTML.read_text()
+    assert "ryuToggleTheme" in PROFILE_HTML.read_text()
