@@ -22,7 +22,7 @@ from dataclasses import dataclass
 class Provider:
     name: str
     binary: str
-    env_key: str  # overrides RYU_<env_key>_PATH/_MODEL/_ARGS
+    env_key: str  # overrides RYU_<env_key>_PATH/_MODEL/_MODELS/_ARGS
     description: str
     install: dict[str, str]  # sys.platform ("darwin"|"win32"|"linux") -> comando
     acp: bool

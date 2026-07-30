@@ -201,7 +201,10 @@ class Daemon:
             except Exception as e:  # noqa: BLE001
                 message = str(e)
         else:
-            message = f"update não suportado para {provider} (atualize manualmente)"
+            install = spec.install.get(sys.platform) if spec else None
+            message = f"update automático não suportado para {provider}" + (
+                f" — reinstale: {install}" if install else " (atualize manualmente)"
+            )
         info = self.registered[ws_id]
         async with self._client(info["token"]) as c:
             with contextlib.suppress(Exception):
