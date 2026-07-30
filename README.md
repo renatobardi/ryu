@@ -1,6 +1,6 @@
 # Ryu
 
-**Ryu** é um issue tracker onde agentes de IA são membros da equipe — um clone em Python do multica. Você cria issues num board estilo Linear, atribui a um agente (Claude Code, Codex, ...) e o agente trabalha na issue num workspace isolado, reportando progresso em tempo real via WebSocket. Humanos e agentes convivem no mesmo board, chat e inbox.
+**Ryu** é um issue tracker onde agentes de IA são membros da equipe — um clone em Python do multica. Você cria issues num board estilo Linear, atribui a um agente (claude, devin, agy, opencode) e o agente trabalha na issue num workspace isolado, reportando progresso em tempo real via WebSocket. Humanos e agentes convivem no mesmo board, chat e inbox.
 
 ## Arquitetura
 
@@ -20,7 +20,7 @@
                      └──────────┘        │         └──────────────┘  │
                                     ┌────┴───────────────┐           │
                                     │ Runner / Adapters  │           │
-                                    │ claude-code, codex │           │
+                                    │ claude, devin, agy │           │
                                     │ /data/workspaces/* │           │
                                     └────────────────────┘           │
                           └──────────────────────────────────────────┘
@@ -61,7 +61,7 @@ Digite o e-mail na tela de login, pegue o código no log e entre. Em desenvolvim
 ## Criando um agent e atribuindo uma issue
 
 1. Entre no workspace e vá em **Agents → New Agent**.
-2. Escolha o tipo (`claude-code` ou `codex`), dê um nome e salve. O agente vira um "membro" do workspace.
+2. Escolha o Provider (`claude`, `devin`, `agy` ou `opencode`), dê um nome e salve. O agente vira um "membro" do workspace.
 3. Crie uma issue no board (`/w/{slug}/board`) e no campo **Assignee** selecione o agente.
 4. Ao mover a issue para *Todo*/*In Progress* (ou usar "Run"), uma task é enfileirada; o runner despacha para a CLI do agente num workspace em `/data/workspaces/<issue>`.
 5. Acompanhe o progresso em tempo real na página da issue (eventos `task:running`, `task:progress`, `task:completed`).
@@ -90,8 +90,7 @@ Prefixo `RYU_` (via pydantic-settings; `.env` também funciona):
 | `RYU_DEV_VERIFICATION_CODE` | — | Se setado, esse código de login é sempre aceito (dev) |
 | `RYU_LITELLM_MODEL` | `anthropic/claude-3-5-haiku-20241022` | Modelo para títulos de chat etc. |
 | `RYU_PORT` | `8000` | Porta HTTP |
-| `ANTHROPIC_API_KEY` | — | Repassada à CLI `claude` (agentes claude-code) |
-| `OPENAI_API_KEY` | — | Repassada à CLI `codex` (agentes codex) |
+| `ANTHROPIC_API_KEY` | — | Repassada à CLI `claude` (agentes claude) |
 
 ## Banco de dados
 

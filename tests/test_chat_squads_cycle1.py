@@ -10,7 +10,7 @@ from tests.conftest import login
 async def _mk_agent(client, ws_id: str, name: str, **extra) -> dict:
     r = await client.post(
         "/api/agents",
-        json={"workspace_id": ws_id, "name": name, "handle": name.lower(), "runtime": "echo-fallback", **extra},
+        json={"workspace_id": ws_id, "name": name, "handle": name.lower(), "runtime": "claude", **extra},
     )
     assert r.status_code == 201, r.text
     return r.json()

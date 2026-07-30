@@ -27,9 +27,9 @@
     <div class="flex flex-col gap-1">
       <label for="agent-runtime" class="text-xs text-text-muted">Runtime</label>
       <select id="agent-runtime" name="runtime" class="bg-surface-input border border-border-strong rounded px-2 py-1.5 text-sm text-text-primary">
-        <option value="claude">claude</option>
-        <option value="codex">codex</option>
-        <option value="gemini">gemini</option>
+        {% for p in providers %}
+        <option value="{{ p }}">{{ p }}</option>
+        {% endfor %}
       </select>
     </div>
     <button class="bg-accent hover:bg-accent-hover text-text-on-accent text-sm rounded px-4 py-1.5">Criar agente</button>

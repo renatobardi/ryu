@@ -517,7 +517,7 @@ def test_adapters_detection_and_overrides(monkeypatch, tmp_path):
     assert ov["args"] == ["--sandbox", "read only"]  # shellword parsing
 
     detected = {d["provider"]: d for d in adapters.detect_runtimes()}
-    assert set(detected) == {"claude", "codex", "gemini", "opencode", "copilot", "cursor-agent", "qwen"}
+    assert set(detected) == {"claude", "devin", "agy", "opencode"}
     assert detected["claude"]["available"] is True
     assert detected["claude"]["path"] == str(fake)
 

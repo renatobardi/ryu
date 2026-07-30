@@ -40,7 +40,6 @@ from ryu.api import pages as pages_api
 from ryu.api import pins as pins_api
 from ryu.api import projects as projects_api
 from ryu.api import properties as properties_api
-from ryu.api import runtime_profiles as runtime_profiles_api
 from ryu.api import skills as skills_api
 from ryu.api import squads as squads_api
 from ryu.api import workspace_extra as workspace_extra_api
@@ -111,7 +110,6 @@ app.include_router(squads_api.router, prefix="/api/squads", tags=["squads"])
 app.include_router(inbox_api.router, prefix="/api/inbox", tags=["inbox"])
 app.include_router(inbox_api.usage_router, prefix="/api/usage", tags=["usage"])
 app.include_router(projects_api.router, prefix="/api/projects", tags=["projects"])
-app.include_router(runtime_profiles_api.router, prefix="/api/runtime-profiles", tags=["runtime-profiles"])
 app.include_router(workspace_extra_api.router, prefix="/api/search", tags=["search"])
 app.include_router(properties_api.router, prefix="/api/properties", tags=["properties"])
 app.include_router(pins_api.router, prefix="/api/pins", tags=["pins"])

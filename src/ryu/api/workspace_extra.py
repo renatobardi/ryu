@@ -36,9 +36,6 @@ STATUS_TITLES = {
     "cancelled": "Cancelled",
 }
 
-RUNTIME_CLIS = ["claude", "codex", "gemini", "git", "node"]
-
-
 # ── Search ────────────────────────────────────────────────────────────
 async def _search(db: AsyncSession, workspace_id: str, q: str, limit: int = 20) -> dict:
     like = f"%{q}%"

@@ -299,7 +299,7 @@ class AgentRuntime(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String, default="Local Agent")
     device_name: Mapped[str] = mapped_column(String, default="")
     runtime_mode: Mapped[str] = mapped_column(String, default="local")  # local (cloud fora de escopo)
-    provider: Mapped[str] = mapped_column(String)  # claude|codex|gemini|opencode|...
+    provider: Mapped[str] = mapped_column(String)  # ver ryu.providers
     version: Mapped[str] = mapped_column(String, default="")
     status: Mapped[str] = mapped_column(String, default="offline")  # online|offline
     device_info: Mapped[str] = mapped_column(String, default="")
@@ -315,7 +315,7 @@ class Agent(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String)
     handle: Mapped[str] = mapped_column(String, index=True)  # @codebot
     description: Mapped[str] = mapped_column(Text, default="")
-    runtime: Mapped[str] = mapped_column(String, default="claude")  # claude|codex|gemini|...
+    runtime: Mapped[str] = mapped_column(String, default="claude")  # provider; ver ryu.providers
     runtime_config: Mapped[dict] = mapped_column(JSON, default=dict)  # cmd extra, cwd, env, repo_url
     status: Mapped[str] = mapped_column(String, default="idle")  # idle|working|blocked|error|offline
     max_concurrent_tasks: Mapped[int] = mapped_column(Integer, default=1)
@@ -331,7 +331,6 @@ class Agent(Base, TimestampMixin):
     model: Mapped[str | None] = mapped_column(String, nullable=True)  # --model do runtime
     thinking_level: Mapped[str | None] = mapped_column(String, nullable=True)  # none|low|medium|high
     service_tier: Mapped[str | None] = mapped_column(String, nullable=True)  # standard|flex|priority
-    profile_id: Mapped[str | None] = mapped_column(String, nullable=True)  # runtime_profile.id
 
 
 class AgentInvocationTarget(Base):
@@ -342,19 +341,6 @@ class AgentInvocationTarget(Base):
     target_type: Mapped[str] = mapped_column(String)  # workspace|member
     target_id: Mapped[str] = mapped_column(String)  # workspace_id ou user_id/member_id
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
-
-
-class RuntimeProfile(Base, TimestampMixin):
-    """Perfil de runtime compartilhável por workspace (multica 120_runtime_profile)."""
-    __tablename__ = "runtime_profile"
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=uid)
-    workspace_id: Mapped[str] = mapped_column(String, index=True)
-    display_name: Mapped[str] = mapped_column(String)
-    protocol_family: Mapped[str] = mapped_column(String, default="claude")  # claude|codex|gemini
-    command_name: Mapped[str] = mapped_column(String)
-    fixed_args: Mapped[list] = mapped_column(JSON, default=list)
-    visibility: Mapped[str] = mapped_column(String, default="workspace")  # workspace|private
-    created_by: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class AgentTask(Base, TimestampMixin):

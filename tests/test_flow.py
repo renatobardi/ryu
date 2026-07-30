@@ -1,5 +1,5 @@
 """Fluxo completo: workspace → label → issue → comment → move →
-agent 'echo-fallback' → atribuição cria AgentTask → runner completa (tick
+agent 'claude' → atribuição cria AgentTask → runner completa (tick
 manual) → comentário do agente + issue em in_review → inbox → usage."""
 from __future__ import annotations
 
@@ -72,19 +72,19 @@ async def test_full_flow(client):
     assert r.status_code == 200
     assert r.json() == []
 
-    # ── agent runtime echo-fallback ───────────────────────────────────
+    # ── agent runtime claude ───────────────────────────────────
     r = await client.post(
         "/api/agents",
         json={
             "workspace_id": ws_id,
             "name": "Echo",
             "handle": "echo",
-            "runtime": "echo-fallback",
+            "runtime": "claude",
         },
     )
     assert r.status_code == 201, r.text
     agent = r.json()
-    assert agent["runtime"] == "echo-fallback"
+    assert agent["runtime"] == "claude"
     assert agent["status"] == "idle"
 
     # ── atribuir issue ao agente → AgentTask queued ───────────────────

@@ -227,7 +227,7 @@ async def delete_workspace_cascade(db: AsyncSession, workspace_id: str) -> None:
     ws_tables = [
         m.Member, m.Invitation, m.NotificationPreference, m.Project, m.Issue,
         m.Label, m.Attachment, m.IssueProperty, m.IssueReaction, m.CommentReaction,
-        m.PinnedItem, m.ActivityLog, m.AgentRuntime, m.Agent, m.RuntimeProfile,
+        m.PinnedItem, m.ActivityLog, m.AgentRuntime, m.Agent,
         m.AgentTask, m.TaskUsage, m.Skill, m.Squad, m.Autopilot,
         m.AutopilotRuleVersion, m.WebhookDelivery, m.ChatSession, m.ChatPinnedAgent,
         m.InboxItem,
