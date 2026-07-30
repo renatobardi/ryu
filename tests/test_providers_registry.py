@@ -24,7 +24,7 @@ def test_registry_is_the_single_source_of_providers():
         assert spec.binary, name
         assert spec.env_key, name
         assert spec.description, name
-        assert spec.install["darwin"] and spec.install["win32"], name
+        assert all(spec.install.get(p) for p in ("darwin", "linux", "win32")), name
         assert isinstance(spec.acp, bool), name
 
     # o daemon detecta exatamente os Providers do registro

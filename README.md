@@ -20,7 +20,8 @@
                      └──────────┘        │         └──────────────┘  │
                                     ┌────┴───────────────┐           │
                                     │ Runner / Adapters  │           │
-                                    │ claude, devin, agy │           │
+                                    │ claude, devin,     │           │
+                                    │ agy, opencode      │           │
                                     │ /data/workspaces/* │           │
                                     └────────────────────┘           │
                           └──────────────────────────────────────────┘
@@ -70,7 +71,7 @@ Via API:
 
 ```bash
 curl -X POST localhost:8000/api/agents -H "Authorization: Bearer $TOKEN" \
-  -d '{"name": "dev-bot", "kind": "claude-code"}'
+  -d '{"name": "dev-bot", "runtime": "claude"}'
 curl -X POST localhost:8000/api/issues -H "Authorization: Bearer $TOKEN" \
   -d '{"title": "Corrigir bug X", "assignee_type": "agent", "assignee_id": "<agent_id>"}'
 ```
